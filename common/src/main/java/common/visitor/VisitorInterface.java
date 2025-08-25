@@ -19,4 +19,5 @@ public interface VisitorInterface {
     Result visit(IdentifierNode node);
     Result visit(TypeNode node);
     Result visit(NilNode node);
+
 }

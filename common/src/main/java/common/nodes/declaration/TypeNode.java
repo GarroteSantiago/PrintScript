@@ -1,6 +1,7 @@
 package common.nodes.declaration;
 
 import common.nodes.LeafNode;
+import common.nodes.Node;
 import common.responses.Result;
 import common.visitor.VisitorInterface;
 

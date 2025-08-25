@@ -30,7 +30,7 @@ public record PrintBuilder(ASTreeBuilderInterface nextBuilder) implements ASTree
         if (!peekResult.isSuccessful()){
             return false;
         }
-        TokenInterface token = ( (CorrectResult<TokenInterface>) peekResult).newObject();
+        TokenInterface token = ((CorrectResult<TokenInterface>) peekResult).newObject();
         return token.equals(printTemplate);
     }
 
