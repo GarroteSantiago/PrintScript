@@ -11,7 +11,6 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/ExecutionEngine" />
             <option value="$PROJECT_DIR$/Visitable" />
-            <option value="$PROJECT_DIR$/analyzer" />
             <option value="$PROJECT_DIR$/ast-api" />
             <option value="$PROJECT_DIR$/cli" />
             <option value="$PROJECT_DIR$/common" />
@@ -20,8 +19,10 @@
             <option value="$PROJECT_DIR$/formatter" />
             <option value="$PROJECT_DIR$/interpreter" />
             <option value="$PROJECT_DIR$/lexer" />
+            <option value="$PROJECT_DIR$/linter" />
             <option value="$PROJECT_DIR$/nodes" />
             <option value="$PROJECT_DIR$/parser" />
+            <option value="$PROJECT_DIR$/repositories" />
             <option value="$PROJECT_DIR$/tokens" />
             <option value="$PROJECT_DIR$/visitable" />
             <option value="$PROJECT_DIR$/visitor" />

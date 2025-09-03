@@ -2,6 +2,7 @@ package lexer;
 
 
 import common.TokenInterface;
+import parser.Reader;
 import results.CorrectResult;
 import results.IncorrectResult;
 import results.Result;
@@ -10,20 +11,33 @@ import stream.TokenStream;
 import stream.TokenStreamInterface;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
-public record Lexical(TokenizerInterface tokenizer) implements LexicalInterface {
+public class Lexical implements LexicalInterface {
+
+    private String word = "";
+    private final Reader reader;
+    private final TokenizerInterface tokenizer;
+
+    public Lexical(Reader reader, TokenizerInterface tokenizer) {
+        this.reader = reader;
+        this.tokenizer = tokenizer;
+        this.word += reader.peek().result();
+    }
+
     @Override
-    public Result<TokenStreamInterface> analyze(List<String> inputs) {
-        List<TokenInterface> tokens = new ArrayList<>();
-        for (String input : inputs) {
-            Result<TokenInterface> result = tokenizer.tokenize(input);
-            if (!result.isSuccessful()) {
-                return new IncorrectResult<>(result.errorMessage());
+    public Result<TokenInterface> analyze() {
+        Result<TokenInterface> result = tokenizer.tokenize(word);
+        if (!result.isSuccessful()) {
+            if(reader.hasNext()) {
+                word += reader.next().result();
+                return analyze();
             }
-            TokenInterface token = result.result();
-            tokens.add(token);
+            return new IncorrectResult<>(result.errorMessage());
         }
-        return new CorrectResult<>(new TokenStream(tokens));
+        word = "";
+        TokenInterface token = result.result();
+        return new CorrectResult<>(token);
     }
 }
