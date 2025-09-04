@@ -1,14 +1,20 @@
 package linter.rules;
 
 import java.util.regex.Pattern;
+
+import common.Node;
+import expression.binary.BinaryExpression;
+import expression.identifier.IdentifierNode;
+import expression.literal.LiteralNode;
 import linter.api.AnalyzerConfig;
 import linter.api.Rule;
 import linter.api.SourceRange;
 import linter.api.Violation;
-import nodes.statements.LetStatementNode;
-import nodes.expression.identifier.IdentifierNode;
-import nodes.visitor.RuleVisitor;
 import results.Result;
+import statements.LetStatementNode;
+import statements.PrintStatementNode;
+import visitor.RuleVisitor;
+
 import java.util.List;
 import java.util.ArrayList;
 
@@ -34,10 +40,9 @@ public final class NamingRule implements Rule, RuleVisitor {
   }
 
   @Override
-  public List<Violation> check(nodes.common.Node root, AnalyzerConfig cfg) {
+  public List<Violation> check(Node root, AnalyzerConfig cfg) {
     this.config = cfg;
     this.violations = new ArrayList<>();
-    root.acceptCheck(this);
     return violations;
   }
 
@@ -60,25 +65,23 @@ public final class NamingRule implements Rule, RuleVisitor {
     if (!matches(node.name(), config.naming().style())) {
       violations.add(new Violation(
         id(),
-        "Identifier '" + node.name() + "' must be " + config.naming().style().name().toLowerCase(),
-        null // Aquí podrías usar el rango si lo tienes
-      ));
+        "Identifier '" + node.name() + "' must be " + config.naming().style().name().toLowerCase(), null));
     }
     return new results.CorrectResult<>("");
   }
 
   @Override
-  public Result<String> check(nodes.expression.binary.BinaryExpression node) {
+  public Result<String> check(BinaryExpression node) {
     return new results.CorrectResult<>("");
   }
 
   @Override
-  public Result<String> check(nodes.expression.literal.LiteralNode node) {
+  public Result<String> check(LiteralNode node) {
     return new results.CorrectResult<>("");
   }
 
   @Override
-  public Result<String> check(nodes.statements.PrintStatementNode node) {
+  public Result<String> check(PrintStatementNode node) {
     return new results.CorrectResult<>("");
   }
 

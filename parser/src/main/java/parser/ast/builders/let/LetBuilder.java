@@ -63,7 +63,9 @@ public record LetBuilder(ASTreeBuilderInterface nextBuilder) implements ASTreeBu
             letNode.setExpression(expressionNode);
         }
 
-        if (!tokenStream.consume(eolTokenTemplate).isSuccessful()) return nextBuilder().build(tokenStream);
+        if (!tokenStream.consume(eolTokenTemplate).isSuccessful()){
+            return nextBuilder().build(tokenStream);
+        }
 
         return new CorrectResult<>(letNode);
     }

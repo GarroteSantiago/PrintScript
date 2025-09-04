@@ -2,10 +2,11 @@ package linter;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import common.Node;
 import linter.api.AnalyzerConfig;
 import linter.api.Rule;
 import linter.api.Violation;
-import nodes.common.Node;
 
 public final class AnalyzerRunner {
   private final List<Rule> rules;

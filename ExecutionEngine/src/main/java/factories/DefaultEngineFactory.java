@@ -7,10 +7,7 @@ import interpreter.InterpreterInterface;
 import interpreter.visitor.InterpretVisitor;
 import lexer.Lexical;
 import lexer.LexicalInterface;
-import parser.CodeParser;
-import parser.CodeParserInterface;
-import parser.Syntactic;
-import parser.SyntacticInterface;
+import parser.*;
 import parser.ast.builders.cor.ChanBuilder;
 import parser.semantic.SemanticAnalyzer;
 import parser.semantic.SemanticInterface;
@@ -23,8 +20,9 @@ import tokenizers.factories.TokenizerFactory;
 public class DefaultEngineFactory implements EngineFactoryInterface {
     @Override
     public ExecutionEngineInterface getInterpreterEngine(CodeRepositoryInterface repository) {
-        TokenizerInterface tokenizer = new TokenizerFactory().createDefaultTokenizer();
-        CodeParserInterface codeParser = new CodeParser(tokenizer);
+        /*TokenizerInterface tokenizer = new TokenizerFactory().createDefaultTokenizer();
+        CodeParserInterface parser = new Parser(tokenizer);
+        CodeParserInterface codeParser = new Reader(tokenizer);
         LexicalInterface lexical = new Lexical(tokenizer);
         SyntacticInterface syntactic = new Syntactic(new ChanBuilder().createDefaultChain());
         SemanticInterface semantic = new SemanticAnalyzer(new SemanticRulesChecker());
@@ -38,6 +36,7 @@ public class DefaultEngineFactory implements EngineFactoryInterface {
                 syntactic,
                 semantic,
                 interpreter
-        );
+        );*/
+        return null;
     }
 }

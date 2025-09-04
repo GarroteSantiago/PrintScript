@@ -1,7 +1,8 @@
 package linter.api;
 
+import common.Node;
+
 import java.util.List;
-import nodes.common.Node;
 
 public interface Rule {
   String id();

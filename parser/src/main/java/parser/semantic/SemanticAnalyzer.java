@@ -8,8 +8,7 @@ import visitor.SemanticallyCheckable;
 public record SemanticAnalyzer(RuleVisitor rulesEnforcer) implements SemanticInterface {
     @Override
     public Boolean isSemanticallyValid(SemanticallyCheckable tree) {
-        Boolean valid = tree.acceptCheck(rulesEnforcer()).isSuccessful();
-        return valid;
+        return tree.acceptCheck(rulesEnforcer()).isSuccessful();
     }
 }
 

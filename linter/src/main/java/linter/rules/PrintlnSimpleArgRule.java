@@ -2,14 +2,18 @@ package linter.rules;
 
 import java.util.List;
 import java.util.ArrayList;
+
+import common.Node;
+import expression.binary.BinaryExpression;
+import expression.identifier.IdentifierNode;
+import expression.literal.LiteralNode;
 import linter.api.AnalyzerConfig;
 import linter.api.Rule;
 import linter.api.Violation;
-import nodes.statements.PrintStatementNode;
-import nodes.expression.identifier.IdentifierNode;
-import nodes.expression.literal.LiteralNode;
-import nodes.visitor.RuleVisitor;
 import results.Result;
+import statements.LetStatementNode;
+import statements.PrintStatementNode;
+import visitor.RuleVisitor;
 
 
 public final class PrintlnSimpleArgRule implements Rule, RuleVisitor {
@@ -32,10 +36,9 @@ public final class PrintlnSimpleArgRule implements Rule, RuleVisitor {
   }
 
   @Override
-  public List<Violation> check(nodes.common.Node root, AnalyzerConfig cfg) {
+  public List<Violation> check(Node root, AnalyzerConfig cfg) {
     this.config = cfg;
     this.violations = new ArrayList<>();
-    root.acceptCheck(this);
     return violations;
   }
 
@@ -56,7 +59,7 @@ public final class PrintlnSimpleArgRule implements Rule, RuleVisitor {
   }
 
   @Override
-  public Result<String> check(nodes.statements.LetStatementNode node) {
+  public Result<String> check(LetStatementNode node) {
     return new results.CorrectResult<>("");
   }
 
@@ -66,7 +69,7 @@ public final class PrintlnSimpleArgRule implements Rule, RuleVisitor {
   }
 
   @Override
-  public Result<String> check(nodes.expression.binary.BinaryExpression node) {
+  public Result<String> check(BinaryExpression node) {
     return new results.CorrectResult<>("");
   }
 

@@ -25,13 +25,13 @@ public class CodeParserTest {
 
     @Test
     public void createCodeParserTest(){
-        CodeParserInterface parser = new CodeParser(tokenizer);
+        CodeParserInterface parser = new Reader(tokenizer);
         Assertions.assertNotNull(parser);
     }
 
     @Test
     public void parseTest(){
-        CodeParserInterface parser = new CodeParser(tokenizer);
+        CodeParserInterface parser = new Reader(tokenizer);
         Assertions.assertTrue(parser.parse(letValidString).isSuccessful());
         Assertions.assertTrue(parser.parse(printValidString).isSuccessful());
         Assertions.assertTrue(parser.parse(expressionValidString).isSuccessful());

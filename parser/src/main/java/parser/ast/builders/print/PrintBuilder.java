@@ -69,7 +69,6 @@ public record PrintBuilder(ASTreeBuilderInterface nextBuilder) implements ASTree
         if (!consumeResult.isSuccessful()) {
             return new IncorrectResult<>(consumeResult.errorMessage());
         }
-
         return new CorrectResult<>(root);
     }
 }

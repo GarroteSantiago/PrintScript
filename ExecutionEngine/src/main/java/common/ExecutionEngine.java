@@ -10,9 +10,11 @@ import repositories.CodeRepositoryInterface;
 import results.CorrectResult;
 import results.IncorrectResult;
 import results.Result;
+import stream.TokenStream;
 import stream.TokenStreamInterface;
 import visitor.SemanticallyCheckable;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public record ExecutionEngine(
@@ -28,17 +30,20 @@ public record ExecutionEngine(
     public Result<String> execute() {
         while (repository().hasMoreCode()) {
             String code = repository.nextChunkOfCode();
-            Result<List<String>> parseResult = codeParser().parse(code);
+            Result<Character> parseResult = codeParser().parse();
             if (!parseResult.isSuccessful()) {
                 return new IncorrectResult<>(parseResult.errorMessage());
             }
-            List<String> tokens = parseResult.result();
-            Result<TokenStreamInterface> tokenizeResult = lexical().analyze(tokens);
+            Result<TokenInterface> tokenizeResult = lexical().analyze();
             if (!tokenizeResult.isSuccessful()) {
                 return new IncorrectResult<>(tokenizeResult.errorMessage());
             }
-            TokenStreamInterface tokenStream = tokenizeResult.result();
-            Result<SemanticallyCheckable> buildAstResult = syntactic().buildAbstractSyntaxTree(tokenStream);
+            List<TokenInterface> tokens = new ArrayList<>();
+            while(tokenizeResult.isSuccessful()){
+                tokens.add(tokenizeResult.result());
+            }
+            TokenStreamInterface tokenStream = new TokenStream(tokens);
+            Result<SemanticallyCheckable> buildAstResult = syntactic().buildAbstractSyntaxTree();
             if (!buildAstResult.isSuccessful()) {
                 return new IncorrectResult<>(buildAstResult.errorMessage());
             }
