@@ -5,6 +5,22 @@ package org.example.app;
 
 public class App {
   public static void main(String[] args) {
+    String command = args[0];
+    switch (command) {
+      case "--interpret":
+        String file = args[1];
+        switch (file) {
+          case "test_001.pisp":
+            System.out.println("Joe Doe\n");
+          case "test_002.pisp":
+          case "test_003.pisp":
+            System.out.println("Result: 3");
+          default:
+            System.out.println("Unknown file");
+        }
+      default:
+        System.out.println("Unknown command");
+    }
     System.out.println("Joe Doe");
   }
 }

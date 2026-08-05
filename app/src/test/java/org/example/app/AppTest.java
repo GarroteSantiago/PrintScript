@@ -38,6 +38,10 @@ class MessageUtilsTest {
       App.main(args);
       String printedResults = virtualOutputStream.toString().trim();
       Assertions.assertTrue(printedResults.contains("Joe Doe"));
+      args = new String[] { "--interpret", "test_002.pisp", "--version", "1.0" };
+      App.main(args);
+      printedResults = virtualOutputStream.toString().trim();
+      Assertions.assertTrue(printedResults.contains("Result: 3"));
     } finally {
       System.setOut(originalTerminal);
     }
