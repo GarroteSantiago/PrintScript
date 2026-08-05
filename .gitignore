@@ -3,6 +3,7 @@ result*
 
 # Java
 target/
+**/bin/
 
 # Misc
 .*
