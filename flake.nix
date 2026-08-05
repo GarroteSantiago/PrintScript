@@ -17,6 +17,7 @@
           javaPackages.compiler.openjdk21
           jdt-language-server
           (gradle.override { java = javaPackages.compiler.openjdk21; })
+          groovy-language-server
         ];
         buildInputs = with pkgs; [ ];
       in
