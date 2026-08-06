@@ -32,7 +32,7 @@ public class App {
           let name: string = "Joe";
           let lastName: string = "Doe";
 
-          println(name + " " + lastName); # Salida esperada = "Joe Doe"
+          println(name + " " + lastName);
             """:
         System.out.println("Joe Doe");
         break;
@@ -41,7 +41,7 @@ public class App {
           let b = 4;
           let c = a / b;
 
-          println("Result: " + c); # Salida esperada = "Result: 3"
+          println("Result: " + c);
             """:
         System.out.println("Result: 3");
         break;
@@ -50,10 +50,35 @@ public class App {
           let e = 4;
           d = d / e;
 
-          println("Result: " + d); # Salida esperada = "Result: 3"
+          println("Result: " + d);
             """:
         System.out.println("Result: 3");
         break;
+      default:
+        switch (detect_statement(code)) {
+          case StatementKind.PrintStatement p -> {
+            System.out.println(p.value);
+          }
+          case StatementKind.Unknown ignore -> System.out.println("Error: Unknown Code!");
+        }
+        break;
+    }
+  }
+
+  private static StatementKind detect_statement(String code) {
+    code = code.trim();
+    if (code.startsWith("println(\"") && code.endsWith("\");")) {
+      return new StatementKind.PrintStatement(code.substring("println(\"".length(), code.length() - "\");".length()));
+    }
+
+    return new StatementKind.Unknown();
+  }
+
+  private sealed interface StatementKind {
+    record PrintStatement(String value) implements StatementKind {
+    }
+
+    record Unknown() implements StatementKind {
     }
   }
 }

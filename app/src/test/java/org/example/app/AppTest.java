@@ -46,7 +46,7 @@ class MessageUtilsTest {
                 let name: string = "Joe";
                 let lastName: string = "Doe";
 
-                println(name + " " + lastName); # Salida esperada = "Joe Doe"
+                println(name + " " + lastName);
                 """,
             "Joe Doe"),
         entry(
@@ -55,7 +55,7 @@ class MessageUtilsTest {
                 let b = 4;
                 let c = a / b;
 
-                println("Result: " + c); # Salida esperada = "Result: 3"
+                println("Result: " + c);
                 """,
             "Result: 3"),
         entry(
@@ -64,9 +64,19 @@ class MessageUtilsTest {
                 let e = 4;
                 d = d / e;
 
-                println("Result: " + d); # Salida esperada = "Result: 3"
+                println("Result: " + d);
                 """,
-            "Result: 3"));
+            "Result: 3"),
+        entry(
+            """
+                println("Hello, World!");
+                """,
+            "Hello, World!"),
+        entry(
+            """
+                println("Goodbye, Mars!");
+                """,
+            "Goodbye, Mars!"));
     try {
       System.setOut(new PrintStream(virtualOutputStream));
       for (Entry<String, String> code_result_tuple : code_results_map.entrySet()) {
@@ -77,7 +87,7 @@ class MessageUtilsTest {
         App.main(args);
         String printedResults = virtualOutputStream.toString().trim();
         virtualOutputStream.reset();
-        Assertions.assertEquals(printedResults, code_result_tuple.getValue());
+        Assertions.assertEquals(code_result_tuple.getValue(), printedResults);
       }
     } finally {
       System.setOut(originalTerminal);
