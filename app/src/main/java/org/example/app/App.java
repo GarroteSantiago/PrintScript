@@ -6,6 +6,7 @@ package org.example.app;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 public class App {
   public static void main(String[] args) throws IOException {
@@ -17,7 +18,7 @@ public class App {
   private static void resolve_command(String file_name, String command) throws IOException {
     switch (command) {
       case "--interpret":
-        resolve_file(file_name);
+        execute_file(file_name);
         break;
       default:
         System.out.println("Unknown command");
@@ -25,7 +26,7 @@ public class App {
     }
   }
 
-  private static void resolve_file(String file) throws IOException {
+  private static void execute_file(String file) throws IOException {
     String code = Files.readString(Path.of(file));
     switch (code) {
       case """
@@ -69,15 +70,24 @@ public class App {
     code = code.trim();
     if (code.startsWith("println(") && code.endsWith(");")) {
       String literal = code.substring("println(".length(), code.length() - ");".length());
-      if (literal.startsWith("\"") && literal.endsWith("\"")) {
-        literal = literal.substring(1, literal.length() - 1);
-      } else if (literal.startsWith("'") && literal.endsWith("'")) {
-        literal = literal.substring(1, literal.length() - 1);
-      }
+      literal = List.of(literal.split("\\+")).stream()
+          .map(App::process_string)
+          .reduce(String::concat)
+          .get();
       return new StatementKind.PrintStatement(literal);
     }
 
     return new StatementKind.Unknown();
+  }
+
+  private static String process_string(String literal) {
+    literal = literal.trim();
+    if (literal.startsWith("\"") && literal.endsWith("\"")) {
+      literal = literal.substring(1, literal.length() - 1);
+    } else if (literal.startsWith("'") && literal.endsWith("'")) {
+      literal = literal.substring(1, literal.length() - 1);
+    }
+    return literal;
   }
 
   private sealed interface StatementKind {

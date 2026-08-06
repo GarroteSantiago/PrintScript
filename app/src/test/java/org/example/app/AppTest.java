@@ -65,7 +65,27 @@ class AppTest {
           """
               println(5);
               """,
-          "5"));
+          "5"),
+      entry(
+          """
+              println("Joe" + " " + "Doe");
+              """,
+          "Joe Doe"),
+      entry(
+          """
+              println('Joe' + ' ' + 'Doe');
+              """,
+          "Joe Doe"),
+      entry(
+          """
+              println('Joe' + " " + 'Doe');
+              """,
+          "Joe Doe"),
+      entry(
+          """
+              println("Result:" + 5);
+              """,
+          "Result:5"));
 
   @Test
   void testAppDoesNotCrashes(@TempDir Path tempdir) throws IOException {
