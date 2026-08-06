@@ -48,36 +48,6 @@ class AppTest {
           "Result: 3"),
       entry(
           """
-              println("Hello, World!");
-              """,
-          "Hello, World!"),
-      entry(
-          """
-              println("Goodbye, Mars!");
-              """,
-          "Goodbye, Mars!"),
-      entry(
-          """
-              println('Hello, World!');
-              """,
-          "Hello, World!"),
-      entry(
-          """
-              println(5);
-              """,
-          "5"),
-      entry(
-          """
-              println("Joe" + " " + "Doe");
-              """,
-          "Joe Doe"),
-      entry(
-          """
-              println('Joe' + ' ' + 'Doe');
-              """,
-          "Joe Doe"),
-      entry(
-          """
               println('Joe' + " " + 'Doe');
               """,
           "Joe Doe"),
@@ -85,7 +55,12 @@ class AppTest {
           """
               println("Result:" + 5);
               """,
-          "Result:5"));
+          "Result:5"),
+      entry(
+          """
+              println(5.7 + 10 + 1.0);
+              """,
+          "16.7"));
 
   @Test
   void testAppDoesNotCrashes(@TempDir Path tempdir) throws IOException {

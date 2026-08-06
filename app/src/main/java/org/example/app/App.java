@@ -4,9 +4,11 @@
 package org.example.app;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class App {
   public static void main(String[] args) throws IOException {
@@ -69,19 +71,52 @@ public class App {
   private static StatementKind detect_statement(String code) {
     code = code.trim();
     if (code.startsWith("println(") && code.endsWith(");")) {
-      String literal = code.substring("println(".length(), code.length() - ");".length());
-      literal = List.of(literal.split("\\+")).stream()
-          .map(App::process_string)
-          .reduce(String::concat)
-          .get();
+      String expression = code.substring("println(".length(), code.length() - ");".length());
+      String literal = solve_expression(expression);
       return new StatementKind.PrintStatement(literal);
     }
 
     return new StatementKind.Unknown();
   }
 
+  private static String solve_expression(String expression) {
+    List<String> addends = List.of(expression.split("\\+")).stream()
+        .map(String::trim)
+        .collect(Collectors.toList());
+    if (is_concatenation(addends)) {
+      return concatenate_string(addends);
+    } else {
+      return sum_numbers(addends);
+    }
+  }
+
+  private static String sum_numbers(List<String> addends) {
+    return addends.stream()
+        .map(String::trim)
+        .map(Double::parseDouble)
+        .map(BigDecimal::valueOf)
+        .reduce(BigDecimal.ZERO, BigDecimal::add)
+        .stripTrailingZeros()
+        .toPlainString();
+  }
+
+  private static String concatenate_string(List<String> addends) {
+    return addends.stream()
+        .map(String::trim)
+        .map(App::process_string)
+        .collect(Collectors.joining());
+  }
+
+  private static Boolean is_concatenation(List<String> expressions) {
+    return expressions.stream().anyMatch(App::is_string);
+  }
+
+  private static Boolean is_string(String expression) {
+    return (expression.startsWith("\"") && expression.endsWith("\""))
+        || (expression.startsWith("'") && expression.endsWith("'"));
+  }
+
   private static String process_string(String literal) {
-    literal = literal.trim();
     if (literal.startsWith("\"") && literal.endsWith("\"")) {
       literal = literal.substring(1, literal.length() - 1);
     } else if (literal.startsWith("'") && literal.endsWith("'")) {
