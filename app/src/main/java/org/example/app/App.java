@@ -18,8 +18,10 @@ public class App {
     switch (command) {
       case "--interpret":
         resolve_file(file_name);
+        break;
       default:
         System.out.println("Unknown command");
+        break;
     }
   }
 

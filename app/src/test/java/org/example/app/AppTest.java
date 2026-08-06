@@ -14,6 +14,9 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
+import java.util.Map.Entry;
+import static java.util.Map.entry;
 
 class MessageUtilsTest {
   @Test
@@ -37,47 +40,45 @@ class MessageUtilsTest {
   void testAppInterpretOutput(@TempDir Path tempdir) throws IOException {
     ByteArrayOutputStream virtualOutputStream = new ByteArrayOutputStream();
     PrintStream originalTerminal = System.out;
+    Map<String, String> code_results_map = Map.ofEntries(
+        entry(
+            """
+                let name: string = "Joe";
+                let lastName: string = "Doe";
+
+                println(name + " " + lastName); # Salida esperada = "Joe Doe"
+                """,
+            "Joe Doe"),
+        entry(
+            """
+                let a = 12;
+                let b = 4;
+                let c = a / b;
+
+                println("Result: " + c); # Salida esperada = "Result: 3"
+                """,
+            "Result: 3"),
+        entry(
+            """
+                let d = 12;
+                let e = 4;
+                d = d / e;
+
+                println("Result: " + d); # Salida esperada = "Result: 3"
+                """,
+            "Result: 3"));
     try {
       System.setOut(new PrintStream(virtualOutputStream));
-
-      Path test_file_path = Files.createTempFile(tempdir, "test-file-", ".pisp");
-      Files.writeString(test_file_path, """
-          let name: string = "Joe";
-          let lastName: string = "Doe";
-
-          println(name + " " + lastName); # Salida esperada = "Joe Doe"
-                    """);
-      String[] args = new String[] { "--interpret", test_file_path.toAbsolutePath().toString(), "--version",
-          "1.0" };
-      App.main(args);
-      String printedResults = virtualOutputStream.toString().trim();
-      Assertions.assertTrue(printedResults.contains("Joe Doe"));
-
-      test_file_path = Files.createTempFile(tempdir, "test-file-", ".pisp");
-      Files.writeString(test_file_path, """
-          let a = 12;
-          let b = 4;
-          let c = a / b;
-
-          println("Result: " + c); # Salida esperada = "Result: 3"
-                              """);
-      args = new String[] { "--interpret", test_file_path.toAbsolutePath().toString(), "--version", "1.0" };
-      App.main(args);
-      printedResults = virtualOutputStream.toString().trim();
-      Assertions.assertTrue(printedResults.contains("Result: 3"));
-
-      test_file_path = Files.createTempFile(tempdir, "test-file-", ".pisp");
-      Files.writeString(test_file_path, """
-          let d = 12;
-          let e = 4;
-          d = d / e;
-
-          println("Result: " + d); # Salida esperada = "Result: 3"
-                              """);
-      args = new String[] { "--interpret", test_file_path.toAbsolutePath().toString(), "--version", "1.0" };
-      App.main(args);
-      printedResults = virtualOutputStream.toString().trim();
-      Assertions.assertTrue(printedResults.contains("Result: 3"));
+      for (Entry<String, String> code_result_tuple : code_results_map.entrySet()) {
+        Path test_file_path = Files.createTempFile(tempdir, "test-file-", ".pisp");
+        Files.writeString(test_file_path, code_result_tuple.getKey());
+        String[] args = new String[] { "--interpret", test_file_path.toAbsolutePath().toString(), "--version",
+            "1.0" };
+        App.main(args);
+        String printedResults = virtualOutputStream.toString().trim();
+        virtualOutputStream.reset();
+        Assertions.assertEquals(printedResults, code_result_tuple.getValue());
+      }
     } finally {
       System.setOut(originalTerminal);
     }
