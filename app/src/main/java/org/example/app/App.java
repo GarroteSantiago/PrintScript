@@ -67,8 +67,14 @@ public class App {
 
   private static StatementKind detect_statement(String code) {
     code = code.trim();
-    if (code.startsWith("println(\"") && code.endsWith("\");")) {
-      return new StatementKind.PrintStatement(code.substring("println(\"".length(), code.length() - "\");".length()));
+    if (code.startsWith("println(") && code.endsWith(");")) {
+      String literal = code.substring("println(".length(), code.length() - ");".length());
+      if (literal.startsWith("\"") && literal.endsWith("\"")) {
+        literal = literal.substring(1, literal.length() - 1);
+      } else if (literal.startsWith("'") && literal.endsWith("'")) {
+        literal = literal.substring(1, literal.length() - 1);
+      }
+      return new StatementKind.PrintStatement(literal);
     }
 
     return new StatementKind.Unknown();

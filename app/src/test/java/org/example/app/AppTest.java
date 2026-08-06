@@ -18,7 +18,55 @@ import java.util.Map;
 import java.util.Map.Entry;
 import static java.util.Map.entry;
 
-class MessageUtilsTest {
+class AppTest {
+  private final Map<String, String> code_interpret_results_map = Map.ofEntries(
+      entry(
+          """
+              let name: string = "Joe";
+              let lastName: string = "Doe";
+
+              println(name + " " + lastName);
+              """,
+          "Joe Doe"),
+      entry(
+          """
+              let a = 12;
+              let b = 4;
+              let c = a / b;
+
+              println("Result: " + c);
+              """,
+          "Result: 3"),
+      entry(
+          """
+              let d = 12;
+              let e = 4;
+              d = d / e;
+
+              println("Result: " + d);
+              """,
+          "Result: 3"),
+      entry(
+          """
+              println("Hello, World!");
+              """,
+          "Hello, World!"),
+      entry(
+          """
+              println("Goodbye, Mars!");
+              """,
+          "Goodbye, Mars!"),
+      entry(
+          """
+              println('Hello, World!');
+              """,
+          "Hello, World!"),
+      entry(
+          """
+              println(5);
+              """,
+          "5"));
+
   @Test
   void testAppDoesNotCrashes(@TempDir Path tempdir) throws IOException {
     String temp_file_path = Files.createTempFile(tempdir, "test-file-", ".pisp").toAbsolutePath().toString();
@@ -40,46 +88,9 @@ class MessageUtilsTest {
   void testAppInterpretOutput(@TempDir Path tempdir) throws IOException {
     ByteArrayOutputStream virtualOutputStream = new ByteArrayOutputStream();
     PrintStream originalTerminal = System.out;
-    Map<String, String> code_results_map = Map.ofEntries(
-        entry(
-            """
-                let name: string = "Joe";
-                let lastName: string = "Doe";
-
-                println(name + " " + lastName);
-                """,
-            "Joe Doe"),
-        entry(
-            """
-                let a = 12;
-                let b = 4;
-                let c = a / b;
-
-                println("Result: " + c);
-                """,
-            "Result: 3"),
-        entry(
-            """
-                let d = 12;
-                let e = 4;
-                d = d / e;
-
-                println("Result: " + d);
-                """,
-            "Result: 3"),
-        entry(
-            """
-                println("Hello, World!");
-                """,
-            "Hello, World!"),
-        entry(
-            """
-                println("Goodbye, Mars!");
-                """,
-            "Goodbye, Mars!"));
     try {
       System.setOut(new PrintStream(virtualOutputStream));
-      for (Entry<String, String> code_result_tuple : code_results_map.entrySet()) {
+      for (Entry<String, String> code_result_tuple : code_interpret_results_map.entrySet()) {
         Path test_file_path = Files.createTempFile(tempdir, "test-file-", ".pisp");
         Files.writeString(test_file_path, code_result_tuple.getKey());
         String[] args = new String[] { "--interpret", test_file_path.toAbsolutePath().toString(), "--version",
