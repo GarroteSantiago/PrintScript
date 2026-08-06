@@ -5,40 +5,76 @@ package org.example.app;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 class MessageUtilsTest {
   @Test
-  void testAppDoesNotCrashes() {
+  void testAppDoesNotCrashes(@TempDir Path tempdir) throws IOException {
+    String temp_file_path = Files.createTempFile(tempdir, "test-file-", ".pisp").toAbsolutePath().toString();
     assertDoesNotThrow(() -> {
-      String[] args = new String[] { "--interpret", "test_001.pisp", "--version", "1.0" };
+      String[] args = new String[] { "--interpret", temp_file_path, "--version", "1.0" };
       App.main(args);
-      args = new String[] { "--format", "test.pisp", "--version", "1.0", "--format-config", "format-config.toml" };
+      args = new String[] { "--format", temp_file_path, "--version", "1.0", "--format-config", "format-config.toml" };
       App.main(args);
-      args = new String[] { "--analyze", "test.pisp", "--version", "1.0", "--analyze-config", "analyze-config.toml" };
+      args = new String[] { "--analyze", temp_file_path, "--version", "1.0", "--analyze-config",
+          "analyze-config.toml" };
       App.main(args);
-      args = new String[] { "--analyze", "test.pisp", "--version", "1.0", "--format-config", "format-config.toml",
+      args = new String[] { "--analyze", temp_file_path, "--version", "1.0", "--format-config", "format-config.toml",
           "--analyze-config", "analyze-config.toml" };
       App.main(args);
     });
   }
 
   @Test
-  void testAppInterpretOutput() {
+  void testAppInterpretOutput(@TempDir Path tempdir) throws IOException {
     ByteArrayOutputStream virtualOutputStream = new ByteArrayOutputStream();
     PrintStream originalTerminal = System.out;
     try {
       System.setOut(new PrintStream(virtualOutputStream));
 
-      String[] args = new String[] { "--interpret", "test_001.pisp", "--version", "1.0" };
+      Path test_file_path = Files.createTempFile(tempdir, "test-file-", ".pisp");
+      Files.writeString(test_file_path, """
+          let name: string = "Joe";
+          let lastName: string = "Doe";
+
+          println(name + " " + lastName); # Salida esperada = "Joe Doe"
+                    """);
+      String[] args = new String[] { "--interpret", test_file_path.toAbsolutePath().toString(), "--version",
+          "1.0" };
       App.main(args);
       String printedResults = virtualOutputStream.toString().trim();
       Assertions.assertTrue(printedResults.contains("Joe Doe"));
-      args = new String[] { "--interpret", "test_002.pisp", "--version", "1.0" };
+
+      test_file_path = Files.createTempFile(tempdir, "test-file-", ".pisp");
+      Files.writeString(test_file_path, """
+          let a = 12;
+          let b = 4;
+          let c = a / b;
+
+          println("Result: " + c); # Salida esperada = "Result: 3"
+                              """);
+      args = new String[] { "--interpret", test_file_path.toAbsolutePath().toString(), "--version", "1.0" };
+      App.main(args);
+      printedResults = virtualOutputStream.toString().trim();
+      Assertions.assertTrue(printedResults.contains("Result: 3"));
+
+      test_file_path = Files.createTempFile(tempdir, "test-file-", ".pisp");
+      Files.writeString(test_file_path, """
+          let d = 12;
+          let e = 4;
+          d = d / e;
+
+          println("Result: " + d); # Salida esperada = "Result: 3"
+                              """);
+      args = new String[] { "--interpret", test_file_path.toAbsolutePath().toString(), "--version", "1.0" };
       App.main(args);
       printedResults = virtualOutputStream.toString().trim();
       Assertions.assertTrue(printedResults.contains("Result: 3"));
@@ -46,5 +82,4 @@ class MessageUtilsTest {
       System.setOut(originalTerminal);
     }
   }
-
 }

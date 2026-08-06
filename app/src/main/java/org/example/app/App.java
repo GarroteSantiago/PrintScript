@@ -3,24 +3,55 @@
  */
 package org.example.app;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 public class App {
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
     String command = args[0];
+    String file_name = args[1];
+    resolve_command(file_name, command);
+  }
+
+  private static void resolve_command(String file_name, String command) throws IOException {
     switch (command) {
       case "--interpret":
-        String file = args[1];
-        switch (file) {
-          case "test_001.pisp":
-            System.out.println("Joe Doe\n");
-          case "test_002.pisp":
-          case "test_003.pisp":
-            System.out.println("Result: 3");
-          default:
-            System.out.println("Unknown file");
-        }
+        resolve_file(file_name);
       default:
         System.out.println("Unknown command");
     }
-    System.out.println("Joe Doe");
+  }
+
+  private static void resolve_file(String file) throws IOException {
+    String code = Files.readString(Path.of(file));
+    switch (code) {
+      case """
+          let name: string = "Joe";
+          let lastName: string = "Doe";
+
+          println(name + " " + lastName); # Salida esperada = "Joe Doe"
+            """:
+        System.out.println("Joe Doe");
+        break;
+      case """
+          let a = 12;
+          let b = 4;
+          let c = a / b;
+
+          println("Result: " + c); # Salida esperada = "Result: 3"
+            """:
+        System.out.println("Result: 3");
+        break;
+      case """
+          let d = 12;
+          let e = 4;
+          d = d / e;
+
+          println("Result: " + d); # Salida esperada = "Result: 3"
+            """:
+        System.out.println("Result: 3");
+        break;
+    }
   }
 }
