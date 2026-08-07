@@ -11,4 +11,14 @@ plugins {
 }
 
 rootProject.name = 'printscript'
-include('app', 'list', 'utilities')
+include(
+    'common',
+    'syntax',
+    'semantics',
+    'interpreter',
+    'formatter',
+    'analyzer',
+    'application',
+    'app',
+    'testkit'
+)

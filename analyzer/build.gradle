@@ -1,0 +1,9 @@
+plugins {
+    id 'buildlogic.java-library-conventions'
+}
+
+dependencies {
+    api project(':common')
+    api project(':syntax')
+    api project(':semantics')
+}
