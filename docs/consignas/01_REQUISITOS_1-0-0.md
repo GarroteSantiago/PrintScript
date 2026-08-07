@@ -26,14 +26,14 @@ let lastName: string = "Doe";
 
 println(name + " " + lastName); # Salida esperada = "Joe Doe"
 
-let a = 12;
-let b = 4;
-let c = a / b;
+let a: number = 12;
+let b: number = 4;
+let c: number = a / b;
 
 println("Result: " + c); # Salida esperada = "Result: 3"
 
-let d = 12;
-let e = 4;
+let d: number = 12;
+let e: number = 4;
 d = d / e;
 
 println("Result: " + d); # Salida esperada = "Result: 3"

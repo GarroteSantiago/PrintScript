@@ -10,6 +10,8 @@ target/
 
 # Allowed
 !.envrc
+!.files/
+!.files/**
 
 # Ignore Gradle project-specific cache directory
 .gradle
