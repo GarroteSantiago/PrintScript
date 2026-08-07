@@ -7,10 +7,15 @@ plugins {
 }
 
 dependencies {
-    implementation 'org.apache.commons:commons-text'
+    implementation project(':application')
+    implementation 'info.picocli:picocli:4.7.7'
 }
 
 application {
     // Define the main class for the application.
     mainClass = 'org.example.app.App'
+}
+
+tasks.named('run', JavaExec) {
+    standardInput = System.in
 }
