@@ -1,6 +1,7 @@
-package org.printscript.syntax;
+package org.printscript.syntax.tokens;
 
 import org.printscript.common.SourceSpan;
+import org.printscript.syntax.TokenType;
 
 public record SyntaxToken(
         TokenType type,
@@ -8,7 +9,7 @@ public record SyntaxToken(
         String text,
         String leadingTrivia,
         SourceSpan span) {
-    static SyntaxToken from(Token token) {
+    public static SyntaxToken from(Token token) {
         return new SyntaxToken(
                 token.type(), token.semanticLexeme(), token.text(), token.leadingTrivia(), token.span());
     }

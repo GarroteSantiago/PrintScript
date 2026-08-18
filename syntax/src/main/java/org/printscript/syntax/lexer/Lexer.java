@@ -1,4 +1,4 @@
-package org.printscript.syntax;
+package org.printscript.syntax.lexer;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -7,8 +7,11 @@ import org.printscript.common.Diagnostic;
 import org.printscript.common.Phase;
 import org.printscript.common.SourcePosition;
 import org.printscript.common.SourceSpan;
+import org.printscript.syntax.SyntaxException;
+import org.printscript.syntax.TokenType;
+import org.printscript.syntax.tokens.Token;
 
-final class Lexer {
+public final class Lexer {
     private final Reader reader;
     private int currentChar;
     private boolean eofTokenEmitted;
@@ -17,19 +20,20 @@ final class Lexer {
     private int offset;
     private SourcePosition lastConsumed = new SourcePosition(1, 1, 0);
 
-    Lexer(String source) {
+    public Lexer(String source) {
         this(new StringReader(source));
     }
 
-    Lexer(Reader reader) {
+    public Lexer(Reader reader) {
         this.reader = reader;
         this.currentChar = readRaw();
     }
 
-    Token next() {
+    public Token next() {
         String leadingTrivia = consumeTrivia();
         if (isAtEnd()) {
-            if (eofTokenEmitted) return eof(leadingTrivia);
+            if (eofTokenEmitted)
+                return eof(leadingTrivia);
             eofTokenEmitted = true;
             return eof(leadingTrivia);
         }

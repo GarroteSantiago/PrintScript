@@ -7,14 +7,14 @@ import java.util.regex.Pattern;
 import org.printscript.common.Diagnostic;
 import org.printscript.common.Phase;
 import org.printscript.semantics.SemanticModel;
-import org.printscript.syntax.AssignmentSyntax;
-import org.printscript.syntax.CallExpressionSyntax;
-import org.printscript.syntax.ExpressionStatementSyntax;
-import org.printscript.syntax.IdentifierExpressionSyntax;
-import org.printscript.syntax.LiteralExpressionSyntax;
-import org.printscript.syntax.ProgramSyntax;
-import org.printscript.syntax.StatementSyntax;
-import org.printscript.syntax.VariableDeclarationSyntax;
+import org.printscript.syntax.nodes.ProgramSyntax;
+import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
+import org.printscript.syntax.nodes.statements.AssignmentSyntax;
+import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.syntax.nodes.statements.StatementSyntax;
+import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 
 public final class StaticAnalyzer {
     private static final Pattern SNAKE_CASE = Pattern.compile("[a-z][a-z0-9]*(?:_[a-z0-9]+)*");
@@ -41,12 +41,15 @@ public final class StaticAnalyzer {
             Consumer<Diagnostic> diagnostics) {
         switch (statement) {
             case VariableDeclarationSyntax declaration ->
-                    checkName(declaration.identifier().semanticLexeme(), declaration.identifier().span(), config, diagnostics);
-            case AssignmentSyntax ignored -> {}
+                checkName(declaration.identifier().semanticLexeme(), declaration.identifier().span(), config,
+                        diagnostics);
+            case AssignmentSyntax ignored -> {
+            }
             case ExpressionStatementSyntax expressionStatement -> {
                 if (config.restrictPrintlnToSimpleArguments()
                         && expressionStatement.expression() instanceof CallExpressionSyntax call
-                        && semanticModel.resolveCall(call).map(signature -> signature.name().equals("println")).orElse(false)
+                        && semanticModel.resolveCall(call).map(signature -> signature.name().equals("println"))
+                                .orElse(false)
                         && !call.arguments().isEmpty()
                         && !(call.arguments().getFirst() instanceof IdentifierExpressionSyntax)
                         && !(call.arguments().getFirst() instanceof LiteralExpressionSyntax)) {

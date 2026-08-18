@@ -4,17 +4,17 @@ import java.util.HashMap;
 import java.util.Map;
 import org.printscript.common.Diagnostic;
 import org.printscript.common.Phase;
-import org.printscript.syntax.AssignmentSyntax;
-import org.printscript.syntax.BinaryExpressionSyntax;
-import org.printscript.syntax.CallExpressionSyntax;
-import org.printscript.syntax.ExpressionStatementSyntax;
-import org.printscript.syntax.ExpressionSyntax;
-import org.printscript.syntax.IdentifierExpressionSyntax;
-import org.printscript.syntax.LiteralExpressionSyntax;
-import org.printscript.syntax.StatementSyntax;
 import org.printscript.syntax.TokenType;
 import org.printscript.syntax.TypeName;
-import org.printscript.syntax.VariableDeclarationSyntax;
+import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
+import org.printscript.syntax.nodes.statements.AssignmentSyntax;
+import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.syntax.nodes.statements.StatementSyntax;
+import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 
 public final class SemanticContext {
     private final BuiltinRegistry builtins;
@@ -49,7 +49,8 @@ public final class SemanticContext {
                     return;
                 }
                 TypeName initializerType = typeOf(declaration.initializer(), nextSymbols, model);
-                if (initializerType == null) return;
+                if (initializerType == null)
+                    return;
                 if (initializerType != declaredType) {
                     model.addDiagnostic(error("Cannot assign " + printable(initializerType) + " to "
                             + printable(declaredType), declaration.initializer().span()));
@@ -70,7 +71,8 @@ public final class SemanticContext {
                             + printable(symbol.type()), assignment.value().span()));
                 }
             }
-            case ExpressionStatementSyntax expressionStatement -> typeOf(expressionStatement.expression(), nextSymbols, model);
+            case ExpressionStatementSyntax expressionStatement ->
+                typeOf(expressionStatement.expression(), nextSymbols, model);
         }
     }
 
@@ -101,9 +103,11 @@ public final class SemanticContext {
     private TypeName binaryType(
             BinaryExpressionSyntax binary, Map<String, VariableSymbol> symbols, SemanticModel.Builder model) {
         TypeName left = typeOf(binary.left(), symbols, model);
-        if (left == null) return null;
+        if (left == null)
+            return null;
         TypeName right = typeOf(binary.right(), symbols, model);
-        if (right == null) return null;
+        if (right == null)
+            return null;
         if (binary.operator().type() == TokenType.PLUS && (left == TypeName.STRING || right == TypeName.STRING)) {
             return TypeName.STRING;
         }
@@ -131,7 +135,8 @@ public final class SemanticContext {
         }
         for (int i = 0; i < call.arguments().size(); i++) {
             TypeName actual = typeOf(call.arguments().get(i), symbols, model);
-            if (actual == null) return null;
+            if (actual == null)
+                return null;
             TypeName expected = signature.parameterTypes().get(i);
             if (actual != expected) {
                 model.addDiagnostic(error("Callable '" + callee + "' expects "

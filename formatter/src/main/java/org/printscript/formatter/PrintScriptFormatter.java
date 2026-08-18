@@ -3,18 +3,19 @@ package org.printscript.formatter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.printscript.syntax.AssignmentSyntax;
-import org.printscript.syntax.BinaryExpressionSyntax;
-import org.printscript.syntax.CallExpressionSyntax;
-import org.printscript.syntax.ExpressionStatementSyntax;
-import org.printscript.syntax.ExpressionSyntax;
-import org.printscript.syntax.IdentifierExpressionSyntax;
-import org.printscript.syntax.LiteralExpressionSyntax;
-import org.printscript.syntax.ProgramSyntax;
-import org.printscript.syntax.StatementSyntax;
-import org.printscript.syntax.SyntaxToken;
+
 import org.printscript.syntax.TokenType;
-import org.printscript.syntax.VariableDeclarationSyntax;
+import org.printscript.syntax.nodes.ProgramSyntax;
+import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
+import org.printscript.syntax.nodes.statements.AssignmentSyntax;
+import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.syntax.nodes.statements.StatementSyntax;
+import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
+import org.printscript.syntax.tokens.SyntaxToken;
 
 public final class PrintScriptFormatter {
     public Session newSession(FormatterConfig config) {
@@ -170,7 +171,8 @@ public final class PrintScriptFormatter {
 
     private String rewriteWhitespaceBeforeFirstComment(String trivia, String replacement) {
         int comment = trivia.indexOf('#');
-        if (comment < 0) return trivia;
+        if (comment < 0)
+            return trivia;
         return replacement + trivia.substring(comment);
     }
 }

@@ -5,10 +5,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.printscript.common.Diagnostic;
-import org.printscript.syntax.CallExpressionSyntax;
-import org.printscript.syntax.ExpressionSyntax;
-import org.printscript.syntax.IdentifierExpressionSyntax;
 import org.printscript.syntax.TypeName;
+import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
 
 public final class SemanticModel {
     private final List<Diagnostic> diagnostics;
@@ -58,7 +58,8 @@ public final class SemanticModel {
         }
 
         void setType(ExpressionSyntax expression, TypeName type) {
-            if (type != null) expressionTypes.put(expression, type);
+            if (type != null)
+                expressionTypes.put(expression, type);
         }
 
         void resolveVariable(IdentifierExpressionSyntax expression, VariableSymbol symbol) {

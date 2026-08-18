@@ -6,6 +6,18 @@ import java.util.ArrayList;
 import java.util.List;
 import org.printscript.common.Diagnostic;
 import org.printscript.common.Phase;
+import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
+import org.printscript.syntax.nodes.statements.AssignmentSyntax;
+import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.syntax.nodes.statements.StatementSyntax;
+import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
+import org.printscript.syntax.tokens.SyntaxToken;
+import org.printscript.syntax.tokens.Token;
+import org.printscript.syntax.lexer.Lexer;
 
 public final class StatementSyntaxReader {
     private final Lexer lexer;
@@ -127,7 +139,8 @@ public final class StatementSyntaxReader {
     }
 
     private Token consume(TokenType type, String message) {
-        if (check(type)) return advance();
+        if (check(type))
+            return advance();
         throw error(current, message);
     }
 

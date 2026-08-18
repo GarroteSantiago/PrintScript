@@ -5,6 +5,9 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.printscript.syntax.nodes.ProgramSyntax;
+import org.printscript.syntax.nodes.statements.StatementSyntax;
+
 public final class SyntaxTreeBuilder {
     private final Reader reader;
 
@@ -19,7 +22,8 @@ public final class SyntaxTreeBuilder {
     public ProgramSyntax buildProgram() {
         StatementSyntaxReader statementReader = new StatementSyntaxReader(reader);
         List<StatementSyntax> statements = new ArrayList<>();
-        while (statementReader.hasNext()) statements.add(statementReader.next());
+        while (statementReader.hasNext())
+            statements.add(statementReader.next());
         return new ProgramSyntax(statements, statementReader.eof());
     }
 }

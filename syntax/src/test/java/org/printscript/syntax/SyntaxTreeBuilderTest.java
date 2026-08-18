@@ -5,6 +5,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.printscript.syntax.nodes.ProgramSyntax;
+import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
+import org.printscript.syntax.nodes.statements.AssignmentSyntax;
+import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.syntax.nodes.statements.StatementSyntax;
+import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
+import org.printscript.syntax.tokens.SyntaxToken;
 
 class SyntaxTreeBuilderTest {
     @Test
@@ -26,7 +37,8 @@ class SyntaxTreeBuilderTest {
 
     private List<SyntaxToken> flatten(ProgramSyntax program) {
         List<SyntaxToken> tokens = new ArrayList<>();
-        for (StatementSyntax statement : program.statements()) addStatement(statement, tokens);
+        for (StatementSyntax statement : program.statements())
+            addStatement(statement, tokens);
         tokens.add(program.eof());
         return tokens;
     }
@@ -67,7 +79,8 @@ class SyntaxTreeBuilderTest {
             case CallExpressionSyntax call -> {
                 tokens.add(call.callee());
                 tokens.add(call.leftParen());
-                for (ExpressionSyntax argument : call.arguments()) addExpression(argument, tokens);
+                for (ExpressionSyntax argument : call.arguments())
+                    addExpression(argument, tokens);
                 tokens.add(call.rightParen());
             }
         }

@@ -1,6 +1,8 @@
-package org.printscript.syntax;
+package org.printscript.syntax.nodes.statements;
 
 import org.printscript.common.SourceSpan;
+import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
+import org.printscript.syntax.tokens.SyntaxToken;
 
 public record VariableDeclarationSyntax(
         SyntaxToken letKeyword,

@@ -23,9 +23,9 @@ import org.printscript.interpreter.RuntimeFailure;
 import org.printscript.semantics.BuiltinRegistry;
 import org.printscript.semantics.SemanticContext;
 import org.printscript.semantics.SemanticStatementResult;
-import org.printscript.syntax.StatementSyntax;
 import org.printscript.syntax.StatementSyntaxReader;
 import org.printscript.syntax.SyntaxException;
+import org.printscript.syntax.nodes.statements.StatementSyntax;
 
 public final class PrintScript {
     private final BuiltinRegistry builtins = BuiltinRegistry.v1();
@@ -39,13 +39,15 @@ public final class PrintScript {
     public CommandResult<ExecutionResult> execute(Reader source, LanguageVersion version, ProgressReporter progress) {
         List<String> output = new ArrayList<>();
         CommandResult<RuntimeEnvironment> result = execute(source, version, output::add, progress);
-        if (!result.isSuccess()) return CommandResult.failure(result.diagnostics());
+        if (!result.isSuccess())
+            return CommandResult.failure(result.diagnostics());
         return CommandResult.success(new ExecutionResult(output));
     }
 
     public CommandResult<RuntimeEnvironment> execute(
             Reader source, LanguageVersion version, Consumer<String> output, ProgressReporter progress) {
-        if (!version.supportsV1()) return unsupported(version);
+        if (!version.supportsV1())
+            return unsupported(version);
         SemanticContext semanticContext = SemanticContext.empty(builtins);
         RuntimeEnvironment runtimeEnvironment = RuntimeEnvironment.empty();
         Interpreter interpreter = new Interpreter(output::accept);
@@ -55,9 +57,11 @@ public final class PrintScript {
             while (statements.hasNext()) {
                 StatementSyntax statement = statements.next();
                 SemanticStatementResult semantic = semanticContext.validate(statement);
-                if (!semantic.isSuccess()) return CommandResult.failure(semantic.diagnostics());
+                if (!semantic.isSuccess())
+                    return CommandResult.failure(semantic.diagnostics());
                 progress.report("Executing statement");
-                runtimeEnvironment = interpreter.executeStatement(statement, runtimeEnvironment, semantic.semanticModel());
+                runtimeEnvironment = interpreter.executeStatement(statement, runtimeEnvironment,
+                        semantic.semanticModel());
                 semanticContext = semantic.nextContext();
             }
         } catch (RuntimeFailure failure) {
@@ -68,11 +72,13 @@ public final class PrintScript {
         return CommandResult.success(runtimeEnvironment);
     }
 
-    public CommandResult<String> format(String source, LanguageVersion version, FormatterConfig config, ProgressReporter progress) {
+    public CommandResult<String> format(String source, LanguageVersion version, FormatterConfig config,
+            ProgressReporter progress) {
         return format(new StringReader(source), version, config, progress);
     }
 
-    public CommandResult<String> format(Reader source, LanguageVersion version, FormatterConfig config, ProgressReporter progress) {
+    public CommandResult<String> format(Reader source, LanguageVersion version, FormatterConfig config,
+            ProgressReporter progress) {
         StringWriter output = new StringWriter();
         CommandResult<Void> result;
         try {
@@ -80,14 +86,17 @@ public final class PrintScript {
         } catch (IOException exception) {
             throw new IllegalStateException("StringWriter append failed", exception);
         }
-        if (!result.isSuccess()) return CommandResult.failure(result.diagnostics());
+        if (!result.isSuccess())
+            return CommandResult.failure(result.diagnostics());
         return CommandResult.success(output.toString());
     }
 
     public CommandResult<Void> format(
-            Reader source, LanguageVersion version, FormatterConfig config, Appendable output, ProgressReporter progress)
+            Reader source, LanguageVersion version, FormatterConfig config, Appendable output,
+            ProgressReporter progress)
             throws IOException {
-        if (!version.supportsV1()) return unsupported(version);
+        if (!version.supportsV1())
+            return unsupported(version);
         try {
             progress.report("Reading statements");
             StatementSyntaxReader statements = new StatementSyntaxReader(source);
@@ -121,7 +130,8 @@ public final class PrintScript {
             AnalyzerConfig config,
             Consumer<Diagnostic> diagnosticSink,
             ProgressReporter progress) {
-        if (!version.supportsV1()) return unsupported(version);
+        if (!version.supportsV1())
+            return unsupported(version);
         AtomicInteger diagnosticCount = new AtomicInteger();
         AtomicInteger errorCount = new AtomicInteger();
         SemanticContext semanticContext = SemanticContext.empty(builtins);
@@ -131,7 +141,8 @@ public final class PrintScript {
             while (statements.hasNext()) {
                 StatementSyntax statement = statements.next();
                 SemanticStatementResult semantic = semanticContext.validate(statement);
-                if (!semantic.isSuccess()) return CommandResult.failure(semantic.diagnostics());
+                if (!semantic.isSuccess())
+                    return CommandResult.failure(semantic.diagnostics());
                 progress.report("Analyzing statement");
                 staticAnalyzer.analyze(statement, semantic.semanticModel(), config, diagnostic -> {
                     diagnosticSink.accept(diagnostic);
@@ -153,14 +164,16 @@ public final class PrintScript {
     }
 
     public CommandResult<Void> validate(Reader source, LanguageVersion version, ProgressReporter progress) {
-        if (!version.supportsV1()) return unsupported(version);
+        if (!version.supportsV1())
+            return unsupported(version);
         SemanticContext semanticContext = SemanticContext.empty(builtins);
         try {
             progress.report("Reading statements");
             StatementSyntaxReader statements = new StatementSyntaxReader(source);
             while (statements.hasNext()) {
                 SemanticStatementResult semantic = semanticContext.validate(statements.next());
-                if (!semantic.isSuccess()) return CommandResult.failure(semantic.diagnostics());
+                if (!semantic.isSuccess())
+                    return CommandResult.failure(semantic.diagnostics());
                 semanticContext = semantic.nextContext();
             }
             return CommandResult.success(null);

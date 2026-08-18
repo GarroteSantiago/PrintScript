@@ -1,10 +1,12 @@
-package org.printscript.syntax;
+package org.printscript.syntax.tokens;
 
 import org.printscript.common.SourceSpan;
+import org.printscript.syntax.TokenType;
 
-record Token(
+public record Token(
         TokenType type,
         String semanticLexeme,
         String text,
         String leadingTrivia,
-        SourceSpan span) {}
+        SourceSpan span) {
+}

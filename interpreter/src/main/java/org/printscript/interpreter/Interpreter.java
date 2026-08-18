@@ -5,18 +5,18 @@ import java.math.MathContext;
 import org.printscript.common.Diagnostic;
 import org.printscript.common.Phase;
 import org.printscript.semantics.SemanticModel;
-import org.printscript.syntax.AssignmentSyntax;
-import org.printscript.syntax.BinaryExpressionSyntax;
-import org.printscript.syntax.CallExpressionSyntax;
-import org.printscript.syntax.ExpressionStatementSyntax;
-import org.printscript.syntax.ExpressionSyntax;
-import org.printscript.syntax.IdentifierExpressionSyntax;
-import org.printscript.syntax.LiteralExpressionSyntax;
-import org.printscript.syntax.ProgramSyntax;
-import org.printscript.syntax.StatementSyntax;
 import org.printscript.syntax.TokenType;
 import org.printscript.syntax.TypeName;
-import org.printscript.syntax.VariableDeclarationSyntax;
+import org.printscript.syntax.nodes.ProgramSyntax;
+import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
+import org.printscript.syntax.nodes.statements.AssignmentSyntax;
+import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.syntax.nodes.statements.StatementSyntax;
+import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 
 public final class Interpreter {
     private final OutputPort output;

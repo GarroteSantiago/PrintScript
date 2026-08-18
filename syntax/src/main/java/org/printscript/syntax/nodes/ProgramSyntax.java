@@ -1,7 +1,9 @@
-package org.printscript.syntax;
+package org.printscript.syntax.nodes;
 
 import java.util.List;
 import org.printscript.common.SourceSpan;
+import org.printscript.syntax.nodes.statements.StatementSyntax;
+import org.printscript.syntax.tokens.SyntaxToken;
 
 public record ProgramSyntax(List<StatementSyntax> statements, SyntaxToken eof) implements SyntaxNode {
     public ProgramSyntax {
@@ -10,7 +12,8 @@ public record ProgramSyntax(List<StatementSyntax> statements, SyntaxToken eof) i
 
     @Override
     public SourceSpan span() {
-        if (statements.isEmpty()) return eof.span();
+        if (statements.isEmpty())
+            return eof.span();
         return new SourceSpan(statements.getFirst().span().start(), eof.span().end());
     }
 }
