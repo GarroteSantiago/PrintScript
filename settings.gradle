@@ -19,6 +19,6 @@ include(
     'formatter',
     'analyzer',
     'application',
-    'app',
+    'cli',
     'testkit'
 )

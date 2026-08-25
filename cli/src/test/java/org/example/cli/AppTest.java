@@ -1,4 +1,4 @@
-package org.example.app;
+package org.example.cli;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -9,6 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.example.cli.App;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.printscript.analyzer.AnalyzerConfig;
@@ -34,13 +36,13 @@ class AppTest {
 
             int exitCode = new App(reader)
                     .run(new String[] {
-                        "format",
-                        "--source",
-                        source.toString(),
-                        "--version",
-                        "1.0",
-                        "--config",
-                        config.toString()
+                            "format",
+                            "--source",
+                            source.toString(),
+                            "--version",
+                            "1.0",
+                            "--config",
+                            config.toString()
                     });
 
             assertEquals(0, exitCode);
@@ -65,7 +67,7 @@ class AppTest {
             System.setOut(new PrintStream(stdout, true, StandardCharsets.UTF_8));
 
             int exitCode = new App(reader, prompt)
-                    .run(new String[] {"format", "--source", source.toString(), "--version", "1.0"});
+                    .run(new String[] { "format", "--source", source.toString(), "--version", "1.0" });
 
             assertEquals(0, exitCode);
             assertEquals(config, reader.formatterPath);
@@ -86,7 +88,7 @@ class AppTest {
         PromptStub prompt = new PromptStub(config);
 
         int exitCode = new App(reader, prompt)
-                .run(new String[] {"analyze", "--source", source.toString(), "--version", "1.0"});
+                .run(new String[] { "analyze", "--source", source.toString(), "--version", "1.0" });
 
         assertEquals(0, exitCode);
         assertEquals(config, reader.analyzerPath);

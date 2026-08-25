@@ -13,7 +13,7 @@ dependencies {
 
 application {
     // Define the main class for the application.
-    mainClass = 'org.example.app.App'
+    mainClass = 'org.example.cli.App'
 }
 
 tasks.named('run', JavaExec) {

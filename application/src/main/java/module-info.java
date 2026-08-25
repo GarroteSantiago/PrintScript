@@ -7,4 +7,6 @@ module org.prinstscript.application {
     requires org.printscript.analyzer;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.toml;
+
+    exports org.printscript.application;
 }

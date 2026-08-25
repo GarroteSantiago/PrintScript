@@ -1,4 +1,4 @@
-package org.example.app;
+package org.example.cli;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -19,15 +19,12 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-@Command(
-        name = "printscript",
-        mixinStandardHelpOptions = true,
-        subcommands = {
-            App.ExecuteCommand.class,
-            App.FormatCommand.class,
-            App.AnalyzeCommand.class,
-            App.ValidateCommand.class
-        })
+@Command(name = "printscript", mixinStandardHelpOptions = true, subcommands = {
+        App.ExecuteCommand.class,
+        App.FormatCommand.class,
+        App.AnalyzeCommand.class,
+        App.ValidateCommand.class
+})
 public class App implements Callable<Integer> {
     private final PrintScriptConfigReader configReader;
     private final PrintScript printScript;
@@ -43,7 +40,8 @@ public class App implements Callable<Integer> {
     }
 
     App(PrintScriptConfigReader configReader, ConfigPathPrompt configPathPrompt) {
-        this(configReader, new PrintScript(), message -> System.err.println("[printscript] " + message), configPathPrompt);
+        this(configReader, new PrintScript(), message -> System.err.println("[printscript] " + message),
+                configPathPrompt);
     }
 
     App(PrintScriptConfigReader configReader, PrintScript printScript, ProgressReporter progress) {
@@ -83,17 +81,19 @@ public class App implements Callable<Integer> {
         @CommandLine.ParentCommand
         private App app;
 
-        @Option(names = {"-s", "--source"}, required = true)
+        @Option(names = { "-s", "--source" }, required = true)
         private Path sourceFile;
 
-        @Option(names = {"-v", "--version"}, required = true)
+        @Option(names = { "-v", "--version" }, required = true)
         private String version;
 
         @Override
         public Integer call() throws IOException {
             CommandResult<?> result = app.printScript.execute(
-                    Files.newBufferedReader(sourceFile), LanguageVersion.parse(version), System.out::println, app.progress);
-            if (!result.isSuccess()) return app.printDiagnostics(result.diagnostics());
+                    Files.newBufferedReader(sourceFile), LanguageVersion.parse(version), System.out::println,
+                    app.progress);
+            if (!result.isSuccess())
+                return app.printDiagnostics(result.diagnostics());
             return 0;
         }
     }
@@ -103,13 +103,13 @@ public class App implements Callable<Integer> {
         @CommandLine.ParentCommand
         private App app;
 
-        @Option(names = {"-s", "--source"}, required = true)
+        @Option(names = { "-s", "--source" }, required = true)
         private Path sourceFile;
 
-        @Option(names = {"-v", "--version"}, required = true)
+        @Option(names = { "-v", "--version" }, required = true)
         private String version;
 
-        @Option(names = {"-c", "--config"})
+        @Option(names = { "-c", "--config" })
         private Path configFile;
 
         @Override
@@ -121,7 +121,8 @@ public class App implements Callable<Integer> {
                     app.configReader.readFormatterConfig(resolvedConfigFile),
                     System.out,
                     app.progress);
-            if (!result.isSuccess()) return app.printDiagnostics(result.diagnostics());
+            if (!result.isSuccess())
+                return app.printDiagnostics(result.diagnostics());
             return 0;
         }
     }
@@ -131,13 +132,13 @@ public class App implements Callable<Integer> {
         @CommandLine.ParentCommand
         private App app;
 
-        @Option(names = {"-s", "--source"}, required = true)
+        @Option(names = { "-s", "--source" }, required = true)
         private Path sourceFile;
 
-        @Option(names = {"-v", "--version"}, required = true)
+        @Option(names = { "-v", "--version" }, required = true)
         private String version;
 
-        @Option(names = {"-c", "--config"})
+        @Option(names = { "-c", "--config" })
         private Path configFile;
 
         @Override
@@ -149,7 +150,8 @@ public class App implements Callable<Integer> {
                     app.configReader.readAnalyzerConfig(resolvedConfigFile),
                     app::printDiagnostic,
                     app.progress);
-            if (!result.isSuccess()) return app.printDiagnostics(result.diagnostics());
+            if (!result.isSuccess())
+                return app.printDiagnostics(result.diagnostics());
             return result.value().errorCount() == 0 ? 0 : 1;
         }
     }
@@ -159,23 +161,25 @@ public class App implements Callable<Integer> {
         @CommandLine.ParentCommand
         private App app;
 
-        @Option(names = {"-s", "--source"}, required = true)
+        @Option(names = { "-s", "--source" }, required = true)
         private Path sourceFile;
 
-        @Option(names = {"-v", "--version"}, required = true)
+        @Option(names = { "-v", "--version" }, required = true)
         private String version;
 
         @Override
         public Integer call() throws IOException {
-            CommandResult<Void> result =
-                    app.printScript.validate(Files.newBufferedReader(sourceFile), LanguageVersion.parse(version), app.progress);
-            if (!result.isSuccess()) return app.printDiagnostics(result.diagnostics());
+            CommandResult<Void> result = app.printScript.validate(Files.newBufferedReader(sourceFile),
+                    LanguageVersion.parse(version), app.progress);
+            if (!result.isSuccess())
+                return app.printDiagnostics(result.diagnostics());
             return 0;
         }
     }
 
     private Path resolveConfigFile(Path configFile) throws IOException {
-        if (configFile != null) return configFile;
+        if (configFile != null)
+            return configFile;
         return configPathPrompt.ask("Config file: ");
     }
 

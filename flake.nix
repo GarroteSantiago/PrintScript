@@ -1,5 +1,5 @@
 {
-  description = "Java Template";
+  description = "SantiagoGarrote's Java Development Environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -13,16 +13,39 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
-        nativeBuildInputs = with pkgs; [
-          javaPackages.compiler.openjdk21
+        java = pkgs.javaPackages.compiler.openjdk21;
+
+        packages = with pkgs; [
+          # Java
+          java
+
+          # Build
+          (gradle.override {
+            inherit java;
+          })
+
+          # Java tooling
           jdt-language-server
-          (gradle.override { java = javaPackages.compiler.openjdk21; })
           groovy-language-server
+
+          # Development utilities
+          just
+
+          # Formatting
+          google-java-format
+
+          # Static analysis
+          checkstyle
+          pmd
+
+          # Coverage
+          jacoco
         ];
-        buildInputs = with pkgs; [ ];
       in
       {
-        devShells.default = pkgs.mkShell { inherit nativeBuildInputs buildInputs; };
+        devShells.default = pkgs.mkShell {
+          inherit packages;
+        };
       }
     );
 }
