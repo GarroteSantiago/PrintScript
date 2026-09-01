@@ -4,9 +4,10 @@ import org.printscript.source.SourceSpan;
 import org.printscript.syntax.TypeName;
 import org.printscript.tokens.SyntaxToken;
 
-public record LiteralExpressionSyntax(SyntaxToken literal, TypeName literalType) implements ExpressionSyntax {
-    @Override
-    public SourceSpan span() {
-        return literal.span();
-    }
+public record LiteralExpressionSyntax(SyntaxToken literal, TypeName literalType)
+    implements ExpressionSyntax {
+  @Override
+  public SourceSpan span() {
+    return literal.span();
+  }
 }

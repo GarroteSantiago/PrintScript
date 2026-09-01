@@ -1,5 +1,5 @@
 module org.printscript.semantics {
-    requires org.printscript.syntax;
+  requires org.printscript.syntax;
 
-    exports org.printscript.semantics;
+  exports org.printscript.semantics;
 }

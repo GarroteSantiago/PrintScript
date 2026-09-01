@@ -3,6 +3,7 @@ package org.printscript.syntax;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.printscript.syntax.nodes.ProgramSyntax;
 import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
@@ -14,27 +15,68 @@ import org.printscript.testkit.TestSources;
 import org.printscript.tokens.TokenType;
 
 class ParserTest {
-    @Test
-    void parsesDeclarationsAssignmentsCallsAndBinaryPrecedence() {
-        String source = """
-                let a: number = 12;
-                let b: number = 4;
-                a = a / b + 1;
-                println("Result: " + a);
-                """;
+  private static final String SOURCE =
+      """
+          let a: number = 12;
+          let b: number = 4;
+          a = a / b + 1;
+          println("Result: " + a);
+          """;
 
-        ProgramSyntax program = TestSources.programOf(source);
+  private ProgramSyntax program;
+  private AssignmentSyntax assignment;
+  private BinaryExpressionSyntax plus;
+  private BinaryExpressionSyntax divide;
+  private ExpressionStatementSyntax callStatement;
 
-        assertEquals(4, program.statements().size());
-        assertInstanceOf(VariableDeclarationSyntax.class, program.statements().get(0));
-        assertInstanceOf(AssignmentSyntax.class, program.statements().get(2));
-        AssignmentSyntax assignment = (AssignmentSyntax) program.statements().get(2);
-        BinaryExpressionSyntax plus = assertInstanceOf(BinaryExpressionSyntax.class, assignment.value());
-        assertEquals(TokenType.PLUS, plus.operator().type());
-        BinaryExpressionSyntax divide = assertInstanceOf(BinaryExpressionSyntax.class, plus.left());
-        assertEquals(TokenType.SLASH, divide.operator().type());
-        ExpressionStatementSyntax callStatement = assertInstanceOf(ExpressionStatementSyntax.class,
-                program.statements().get(3));
-        assertInstanceOf(CallExpressionSyntax.class, callStatement.expression());
-    }
+  @BeforeEach
+  void parseSource() {
+    program = TestSources.programOf(SOURCE);
+    assignment = (AssignmentSyntax) program.statements().get(2);
+    plus =
+        assertInstanceOf(
+            BinaryExpressionSyntax.class, assignment.value(), "expected a binary expression");
+    divide =
+        assertInstanceOf(
+            BinaryExpressionSyntax.class, plus.left(), "expected a nested binary expression");
+    callStatement =
+        assertInstanceOf(
+            ExpressionStatementSyntax.class,
+            program.statements().get(3),
+            "expected an expression statement");
+  }
+
+  @Test
+  void parsesExpectedStatementCount() {
+    assertEquals(4, program.statements().size(), "expected 4 statements");
+  }
+
+  @Test
+  void parsesFirstStatementAsVariableDeclaration() {
+    assertInstanceOf(
+        VariableDeclarationSyntax.class,
+        program.statements().get(0),
+        "expected a variable declaration");
+  }
+
+  @Test
+  void parsesThirdStatementAsAssignment() {
+    assertInstanceOf(AssignmentSyntax.class, program.statements().get(2), "expected an assignment");
+  }
+
+  @Test
+  void parsesAdditionAsTopLevelBinaryOperator() {
+    assertEquals(TokenType.PLUS, plus.operator().type(), "expected top-level '+' operator");
+  }
+
+  @Test
+  void parsesDivisionAsHigherPrecedenceThanAddition() {
+    assertEquals(TokenType.SLASH, divide.operator().type(), "expected nested '/' operator");
+  }
+
+  @Test
+  void parsesFourthStatementExpressionAsCall() {
+    assertInstanceOf(
+        CallExpressionSyntax.class, callStatement.expression(), "expected a call expression");
+  }
 }

@@ -7,13 +7,13 @@ import org.printscript.syntax.SyntaxTreeBuilder;
 import org.printscript.syntax.nodes.ProgramSyntax;
 
 public final class TestSources {
-    private TestSources() {}
+  private TestSources() {}
 
-    public static StatementSource statementsOf(String source) {
-        return new StatementSyntaxReader(new Lexer(source));
-    }
+  public static StatementSource statementsOf(String source) {
+    return new StatementSyntaxReader(new Lexer(source));
+  }
 
-    public static ProgramSyntax programOf(String source) {
-        return new SyntaxTreeBuilder(statementsOf(source)).buildProgram();
-    }
+  public static ProgramSyntax programOf(String source) {
+    return new SyntaxTreeBuilder(statementsOf(source)).buildProgram();
+  }
 }

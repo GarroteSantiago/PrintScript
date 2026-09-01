@@ -4,9 +4,9 @@ import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.tokens.SyntaxToken;
 
 public interface StatementSource {
-    boolean hasNext();
+  boolean hasNext();
 
-    StatementSyntax next();
+  StatementSyntax next();
 
-    SyntaxToken eof();
+  SyntaxToken eof();
 }

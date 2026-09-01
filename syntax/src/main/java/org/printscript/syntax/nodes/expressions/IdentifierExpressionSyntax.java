@@ -4,8 +4,8 @@ import org.printscript.source.SourceSpan;
 import org.printscript.tokens.SyntaxToken;
 
 public record IdentifierExpressionSyntax(SyntaxToken identifier) implements ExpressionSyntax {
-    @Override
-    public SourceSpan span() {
-        return identifier.span();
-    }
+  @Override
+  public SourceSpan span() {
+    return identifier.span();
+  }
 }

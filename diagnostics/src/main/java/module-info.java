@@ -1,5 +1,5 @@
 module org.printscript.diagnostics {
-    requires transitive org.printscript.source;
+  requires transitive org.printscript.source;
 
-    exports org.printscript.diagnostics;
+  exports org.printscript.diagnostics;
 }

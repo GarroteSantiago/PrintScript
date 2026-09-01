@@ -2,17 +2,29 @@ package org.printscript.semantics;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.printscript.testkit.TestSources;
 
 class SemanticModelBuilderTest {
-    @Test
-    void rejectsAssigningStringToNumberVariable() {
-        var program = TestSources.programOf("let total: number = \"no\";");
+  private SemanticModel semanticModel;
 
-        var semanticModel = new SemanticModelBuilder(BuiltinRegistry.v1()).build(program);
+  @BeforeEach
+  void buildModelForInvalidAssignment() {
+    var program = TestSources.programOf("let total: number = \"no\";");
+    semanticModel = new SemanticModelBuilder(BuiltinRegistry.v1()).build(program);
+  }
 
-        assertEquals(1, semanticModel.diagnostics().size());
-        assertEquals("Cannot assign string to number", semanticModel.diagnostics().getFirst().message());
-    }
+  @Test
+  void rejectsAssigningStringToNumberVariable() {
+    assertEquals(1, semanticModel.diagnostics().size(), "expected exactly one diagnostic");
+  }
+
+  @Test
+  void reportsTypeMismatchMessage() {
+    assertEquals(
+        "Cannot assign string to number",
+        semanticModel.diagnostics().getFirst().message(),
+        "expected type-mismatch diagnostic message");
+  }
 }

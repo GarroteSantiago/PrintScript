@@ -9,59 +9,111 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.printscript.analyzer.AnalyzerConfig;
 import org.printscript.diagnostics.Diagnostic;
+import org.printscript.interpreter.RuntimeEnvironment;
 
 class PrintScriptTest {
-    @Test
-    void executesVersionOneProgram() {
-        String source = """
-                let name: string = "Joe";
-                let lastName: string = 'Doe';
-                println(name + " " + lastName);
-                let a: number = 12;
-                let b: number = 4;
-                let c: number = a / b;
-                println("Result: " + c);
-                """;
+  private static final String VERSION_ONE_SOURCE =
+      """
+          let name: string = "Joe";
+          let lastName: string = 'Doe';
+          println(name + " " + lastName);
+          let a: number = 12;
+          let b: number = 4;
+          let c: number = a / b;
+          println("Result: " + c);
+          """;
 
-        CommandResult<ExecutionResult> result =
-                new PrintScript().execute(source, LanguageVersion.V1_0_0, ProgressReporter.NONE);
+  @Test
+  void executesVersionOneProgramSuccessfully() {
+    CommandResult<ExecutionResult> result = executeVersionOneProgram();
 
-        assertTrue(result.isSuccess());
-        assertEquals(java.util.List.of("Joe Doe", "Result: 3"), result.value().outputLines());
-    }
+    assertTrue(result.isSuccess(), "expected execution to succeed");
+  }
 
-    @Test
-    void executesIntoInjectedOutputPort() {
-        List<String> output = new ArrayList<>();
+  @Test
+  void executesVersionOneProgramWithExpectedOutput() {
+    CommandResult<ExecutionResult> result = executeVersionOneProgram();
 
-        var result = new PrintScript()
-                .execute(
-                        new StringReader("""
-                                let value: number = 2;
-                                println("value: " + value);
-                                """),
-                        LanguageVersion.V1_0_0,
-                        output::add,
-                        ProgressReporter.NONE);
+    assertEquals(
+        List.of("Joe Doe", "Result: 3"),
+        result.value().outputLines(),
+        "expected println output lines");
+  }
 
-        assertTrue(result.isSuccess());
-        assertEquals(List.of("value: 2"), output);
-    }
+  private CommandResult<ExecutionResult> executeVersionOneProgram() {
+    return new PrintScript()
+        .execute(VERSION_ONE_SOURCE, LanguageVersion.V1_0_0, ProgressReporter.NONE);
+  }
 
-    @Test
-    void streamsAnalyzerDiagnosticsToSink() {
-        List<Diagnostic> diagnostics = new ArrayList<>();
+  @Test
+  void executesIntoInjectedOutputPortSuccessfully() {
+    List<String> output = new ArrayList<>();
 
-        var result = new PrintScript()
-                .analyze(
-                        new StringReader("let badName: string = \"hello\";"),
-                        LanguageVersion.V1_0_0,
-                        AnalyzerConfig.defaults(),
-                        diagnostics::add,
-                        ProgressReporter.NONE);
+    CommandResult<RuntimeEnvironment> result = executeSampleProgramIntoOutputPort(output);
 
-        assertTrue(result.isSuccess());
-        assertEquals(1, result.value().diagnosticCount());
-        assertEquals("Identifier 'badName' does not match SNAKE_CASE", diagnostics.getFirst().message());
-    }
+    assertTrue(result.isSuccess(), "expected execution to succeed");
+  }
+
+  @Test
+  void executesIntoInjectedOutputPortWithExpectedOutput() {
+    List<String> output = new ArrayList<>();
+
+    executeSampleProgramIntoOutputPort(output);
+
+    assertEquals(List.of("value: 2"), output, "expected println output collected via output port");
+  }
+
+  private CommandResult<RuntimeEnvironment> executeSampleProgramIntoOutputPort(
+      List<String> output) {
+    return new PrintScript()
+        .execute(
+            new StringReader(
+                """
+                    let value: number = 2;
+                    println("value: " + value);
+                    """),
+            LanguageVersion.V1_0_0,
+            output::add,
+            ProgressReporter.NONE);
+  }
+
+  @Test
+  void streamsAnalyzerDiagnosticsSuccessfully() {
+    List<Diagnostic> diagnostics = new ArrayList<>();
+
+    CommandResult<AnalysisResult> result = analyzeSampleProgram(diagnostics);
+
+    assertTrue(result.isSuccess(), "expected analysis to succeed");
+  }
+
+  @Test
+  void streamsAnalyzerDiagnosticsWithExpectedCount() {
+    List<Diagnostic> diagnostics = new ArrayList<>();
+
+    CommandResult<AnalysisResult> result = analyzeSampleProgram(diagnostics);
+
+    assertEquals(1, result.value().diagnosticCount(), "expected one diagnostic reported");
+  }
+
+  @Test
+  void streamsAnalyzerDiagnosticsWithExpectedMessage() {
+    List<Diagnostic> diagnostics = new ArrayList<>();
+
+    analyzeSampleProgram(diagnostics);
+
+    assertEquals(
+        "Identifier 'badName' does not match SNAKE_CASE",
+        diagnostics.getFirst().message(),
+        "expected naming style diagnostic message");
+  }
+
+  private CommandResult<AnalysisResult> analyzeSampleProgram(List<Diagnostic> diagnostics) {
+    return new PrintScript()
+        .analyze(
+            new StringReader("let badName: string = \"hello\";"),
+            LanguageVersion.V1_0_0,
+            AnalyzerConfig.defaults(),
+            diagnostics::add,
+            ProgressReporter.NONE);
+  }
 }

@@ -6,7 +6,7 @@ import org.printscript.analyzer.AnalyzerConfig;
 import org.printscript.formatter.FormatterConfig;
 
 public interface PrintScriptConfigReader {
-    FormatterConfig readFormatterConfig(Path path) throws IOException;
+  FormatterConfig readFormatterConfig(Path path) throws IOException;
 
-    AnalyzerConfig readAnalyzerConfig(Path path) throws IOException;
+  AnalyzerConfig readAnalyzerConfig(Path path) throws IOException;
 }

@@ -7,37 +7,46 @@ import org.junit.jupiter.api.Test;
 import org.printscript.testkit.TestSources;
 
 class PrintScriptFormatterTest {
-    @Test
-    void normalizesControlledSpacingAndPreservesCommentsAndTokenText() {
-        String source = "let   a:string='value'; # keep\nprintln(a);";
+  @Test
+  void normalizesControlledSpacingAndPreservesCommentsAndTokenText() {
+    String source = "let   a:string='value'; # keep\nprintln(a);";
 
-        String formatted =
-                new PrintScriptFormatter().format(TestSources.programOf(source), FormatterConfig.defaults());
+    String formatted =
+        new PrintScriptFormatter()
+            .format(TestSources.programOf(source), FormatterConfig.defaults());
 
-        assertEquals("let a: string = 'value';# keep\nprintln(a);\n", formatted);
+    assertEquals(
+        "let a: string = 'value';# keep\nprintln(a);\n", formatted, "expected normalized spacing");
+  }
+
+  @Test
+  void insertsBlankLinesBeforePrintlnWithoutLeadingSpace() {
+    String source = "let text: string = \"hello\";\nprintln(text);";
+
+    String formatted =
+        new PrintScriptFormatter()
+            .format(TestSources.programOf(source), new FormatterConfig(0, 0, 1, 1, 1));
+
+    assertEquals(
+        "let text: string = \"hello\";\n\nprintln(text);\n",
+        formatted,
+        "expected blank line before println");
+  }
+
+  @Test
+  void writesFormattedStatementsToAppendable() throws Exception {
+    var statements = TestSources.statementsOf("let text:string=\"hello\";\nprintln(text);");
+    var session = new PrintScriptFormatter().newSession(new FormatterConfig(0, 0, 1, 1, 1));
+    var output = new StringWriter();
+
+    while (statements.hasNext()) {
+      session.format(statements.next(), output);
     }
+    session.finish(statements.eof(), output);
 
-    @Test
-    void insertsBlankLinesBeforePrintlnWithoutLeadingSpace() {
-        String source = "let text: string = \"hello\";\nprintln(text);";
-
-        String formatted = new PrintScriptFormatter()
-                .format(TestSources.programOf(source), new FormatterConfig(0, 0, 1, 1, 1));
-
-        assertEquals("let text: string = \"hello\";\n\nprintln(text);\n", formatted);
-    }
-
-    @Test
-    void writesFormattedStatementsToAppendable() throws Exception {
-        var statements = TestSources.statementsOf("let text:string=\"hello\";\nprintln(text);");
-        var session = new PrintScriptFormatter().newSession(new FormatterConfig(0, 0, 1, 1, 1));
-        var output = new StringWriter();
-
-        while (statements.hasNext()) {
-            session.format(statements.next(), output);
-        }
-        session.finish(statements.eof(), output);
-
-        assertEquals("let text: string = \"hello\";\n\nprintln(text);\n", output.toString());
-    }
+    assertEquals(
+        "let text: string = \"hello\";\n\nprintln(text);\n",
+        output.toString(),
+        "expected formatted statements written to the appendable");
+  }
 }

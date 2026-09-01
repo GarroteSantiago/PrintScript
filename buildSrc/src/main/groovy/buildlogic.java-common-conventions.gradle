@@ -33,7 +33,8 @@ checkstyle {
 pmd {
     toolVersion = '7.0.0'
     consoleOutput = true
-    ruleSets = ["category/java/errorprone.xml", "category/java/bestpractices.xml"]
+    ruleSets = []
+    ruleSetFiles = files("$rootDir/config/pmd/ruleset.xml")
 }
 
 

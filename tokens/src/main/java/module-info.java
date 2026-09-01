@@ -1,5 +1,5 @@
 module org.printscript.tokens {
-    requires transitive org.printscript.diagnostics;
+  requires transitive org.printscript.diagnostics;
 
-    exports org.printscript.tokens;
+  exports org.printscript.tokens;
 }

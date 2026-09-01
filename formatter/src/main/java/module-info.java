@@ -1,5 +1,5 @@
 module org.printscript.formatter {
-    requires org.printscript.syntax;
+  requires org.printscript.syntax;
 
-    exports org.printscript.formatter;
+  exports org.printscript.formatter;
 }

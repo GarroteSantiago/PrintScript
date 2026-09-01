@@ -1,5 +1,5 @@
 module org.printscript.lexer {
-    requires transitive org.printscript.tokens;
+  requires transitive org.printscript.tokens;
 
-    exports org.printscript.lexer;
+  exports org.printscript.lexer;
 }

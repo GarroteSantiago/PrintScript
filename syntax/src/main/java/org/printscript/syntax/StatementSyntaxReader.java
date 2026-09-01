@@ -20,149 +20,155 @@ import org.printscript.tokens.TokenSource;
 import org.printscript.tokens.TokenType;
 
 public final class StatementSyntaxReader implements StatementSource {
-    private final TokenSource tokenSource;
-    private Token current;
-    private Token next;
-    private Token previous;
+  private final TokenSource tokenSource;
+  private Token current;
+  private Token next;
+  private Token previous;
 
-    public StatementSyntaxReader(TokenSource tokenSource) {
-        this.tokenSource = tokenSource;
-        this.current = tokenSource.next();
-        this.next = tokenSource.next();
+  public StatementSyntaxReader(TokenSource tokenSource) {
+    this.tokenSource = tokenSource;
+    this.current = tokenSource.next();
+    this.next = tokenSource.next();
+  }
+
+  @Override
+  public boolean hasNext() {
+    return !check(TokenType.EOF);
+  }
+
+  @Override
+  public StatementSyntax next() {
+    if (!hasNext()) {
+      throw error(current, "Expected statement");
     }
+    return statement();
+  }
 
-    @Override
-    public boolean hasNext() {
-        return !check(TokenType.EOF);
+  @Override
+  public SyntaxToken eof() {
+    return syntax(current);
+  }
+
+  private StatementSyntax statement() {
+    if (match(TokenType.LET)) {
+      return variableDeclaration(previous);
     }
+    if (check(TokenType.IDENTIFIER) && checkNext(TokenType.EQUAL)) {
+      return assignment();
+    }
+    ExpressionSyntax expression = expression();
+    Token semicolon = consume(TokenType.SEMICOLON, "Expected ';' after statement");
+    return new ExpressionStatementSyntax(expression, syntax(semicolon));
+  }
 
-    @Override
-    public StatementSyntax next() {
-        if (!hasNext()) {
-            throw error(current, "Expected statement");
+  private StatementSyntax variableDeclaration(Token let) {
+    Token name = consume(TokenType.IDENTIFIER, "Expected variable name");
+    Token colon = consume(TokenType.COLON, "Expected ':' after variable name");
+    Token type = consume(TokenType.TYPE, "Expected type annotation");
+    Token equals = consume(TokenType.EQUAL, "Expected '=' after type annotation");
+    ExpressionSyntax initializer = expression();
+    Token semicolon = consume(TokenType.SEMICOLON, "Expected ';' after declaration");
+    return new VariableDeclarationSyntax(
+        syntax(let),
+        syntax(name),
+        syntax(colon),
+        syntax(type),
+        syntax(equals),
+        initializer,
+        syntax(semicolon));
+  }
+
+  private StatementSyntax assignment() {
+    Token name = consume(TokenType.IDENTIFIER, "Expected variable name");
+    Token equals = consume(TokenType.EQUAL, "Expected '=' after variable name");
+    ExpressionSyntax value = expression();
+    Token semicolon = consume(TokenType.SEMICOLON, "Expected ';' after assignment");
+    return new AssignmentSyntax(syntax(name), syntax(equals), value, syntax(semicolon));
+  }
+
+  private ExpressionSyntax expression() {
+    return addition();
+  }
+
+  private ExpressionSyntax addition() {
+    ExpressionSyntax expression = multiplication();
+    while (match(TokenType.PLUS, TokenType.MINUS)) {
+      Token operator = previous;
+      ExpressionSyntax right = multiplication();
+      expression = new BinaryExpressionSyntax(expression, syntax(operator), right);
+    }
+    return expression;
+  }
+
+  private ExpressionSyntax multiplication() {
+    ExpressionSyntax expression = primary();
+    while (match(TokenType.STAR, TokenType.SLASH)) {
+      Token operator = previous;
+      ExpressionSyntax right = primary();
+      expression = new BinaryExpressionSyntax(expression, syntax(operator), right);
+    }
+    return expression;
+  }
+
+  private ExpressionSyntax primary() {
+    if (match(TokenType.NUMBER)) {
+      return new LiteralExpressionSyntax(syntax(previous), TypeName.NUMBER);
+    }
+    if (match(TokenType.STRING)) {
+      return new LiteralExpressionSyntax(syntax(previous), TypeName.STRING);
+    }
+    if (match(TokenType.IDENTIFIER)) {
+      Token identifier = previous;
+      if (match(TokenType.LEFT_PAREN)) {
+        Token leftParen = previous;
+        List<ExpressionSyntax> arguments = new ArrayList<>();
+        if (!check(TokenType.RIGHT_PAREN)) {
+          arguments.add(expression());
         }
-        return statement();
+        Token rightParen = consume(TokenType.RIGHT_PAREN, "Expected ')' after call arguments");
+        return new CallExpressionSyntax(
+            syntax(identifier), syntax(leftParen), arguments, syntax(rightParen));
+      }
+      return new IdentifierExpressionSyntax(syntax(identifier));
     }
+    throw error(current, "Expected expression");
+  }
 
-    @Override
-    public SyntaxToken eof() {
-        return syntax(current);
+  private boolean match(TokenType... types) {
+    for (TokenType type : types) {
+      if (check(type)) {
+        advance();
+        return true;
+      }
     }
+    return false;
+  }
 
-    private StatementSyntax statement() {
-        if (match(TokenType.LET)) {
-            return variableDeclaration(previous);
-        }
-        if (check(TokenType.IDENTIFIER) && checkNext(TokenType.EQUAL)) {
-            return assignment();
-        }
-        ExpressionSyntax expression = expression();
-        Token semicolon = consume(TokenType.SEMICOLON, "Expected ';' after statement");
-        return new ExpressionStatementSyntax(expression, syntax(semicolon));
-    }
+  private Token consume(TokenType type, String message) {
+    if (check(type)) return advance();
+    throw error(current, message);
+  }
 
-    private StatementSyntax variableDeclaration(Token let) {
-        Token name = consume(TokenType.IDENTIFIER, "Expected variable name");
-        Token colon = consume(TokenType.COLON, "Expected ':' after variable name");
-        Token type = consume(TokenType.TYPE, "Expected type annotation");
-        Token equals = consume(TokenType.EQUAL, "Expected '=' after type annotation");
-        ExpressionSyntax initializer = expression();
-        Token semicolon = consume(TokenType.SEMICOLON, "Expected ';' after declaration");
-        return new VariableDeclarationSyntax(
-                syntax(let), syntax(name), syntax(colon), syntax(type), syntax(equals), initializer, syntax(semicolon));
-    }
+  private boolean check(TokenType type) {
+    return current.type() == type;
+  }
 
-    private StatementSyntax assignment() {
-        Token name = consume(TokenType.IDENTIFIER, "Expected variable name");
-        Token equals = consume(TokenType.EQUAL, "Expected '=' after variable name");
-        ExpressionSyntax value = expression();
-        Token semicolon = consume(TokenType.SEMICOLON, "Expected ';' after assignment");
-        return new AssignmentSyntax(syntax(name), syntax(equals), value, syntax(semicolon));
-    }
+  private boolean checkNext(TokenType type) {
+    return next.type() == type;
+  }
 
-    private ExpressionSyntax expression() {
-        return addition();
-    }
+  private Token advance() {
+    previous = current;
+    current = next;
+    next = tokenSource.next();
+    return previous;
+  }
 
-    private ExpressionSyntax addition() {
-        ExpressionSyntax expression = multiplication();
-        while (match(TokenType.PLUS, TokenType.MINUS)) {
-            Token operator = previous;
-            ExpressionSyntax right = multiplication();
-            expression = new BinaryExpressionSyntax(expression, syntax(operator), right);
-        }
-        return expression;
-    }
+  private SyntaxToken syntax(Token token) {
+    return SyntaxToken.from(token);
+  }
 
-    private ExpressionSyntax multiplication() {
-        ExpressionSyntax expression = primary();
-        while (match(TokenType.STAR, TokenType.SLASH)) {
-            Token operator = previous;
-            ExpressionSyntax right = primary();
-            expression = new BinaryExpressionSyntax(expression, syntax(operator), right);
-        }
-        return expression;
-    }
-
-    private ExpressionSyntax primary() {
-        if (match(TokenType.NUMBER)) {
-            return new LiteralExpressionSyntax(syntax(previous), TypeName.NUMBER);
-        }
-        if (match(TokenType.STRING)) {
-            return new LiteralExpressionSyntax(syntax(previous), TypeName.STRING);
-        }
-        if (match(TokenType.IDENTIFIER)) {
-            Token identifier = previous;
-            if (match(TokenType.LEFT_PAREN)) {
-                Token leftParen = previous;
-                List<ExpressionSyntax> arguments = new ArrayList<>();
-                if (!check(TokenType.RIGHT_PAREN)) {
-                    arguments.add(expression());
-                }
-                Token rightParen = consume(TokenType.RIGHT_PAREN, "Expected ')' after call arguments");
-                return new CallExpressionSyntax(syntax(identifier), syntax(leftParen), arguments, syntax(rightParen));
-            }
-            return new IdentifierExpressionSyntax(syntax(identifier));
-        }
-        throw error(current, "Expected expression");
-    }
-
-    private boolean match(TokenType... types) {
-        for (TokenType type : types) {
-            if (check(type)) {
-                advance();
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private Token consume(TokenType type, String message) {
-        if (check(type))
-            return advance();
-        throw error(current, message);
-    }
-
-    private boolean check(TokenType type) {
-        return current.type() == type;
-    }
-
-    private boolean checkNext(TokenType type) {
-        return next.type() == type;
-    }
-
-    private Token advance() {
-        previous = current;
-        current = next;
-        next = tokenSource.next();
-        return previous;
-    }
-
-    private SyntaxToken syntax(Token token) {
-        return SyntaxToken.from(token);
-    }
-
-    private SyntaxException error(Token token, String message) {
-        return new SyntaxException(Diagnostic.error(Phase.SYNTAX, message, token.span()));
-    }
+  private SyntaxException error(Token token, String message) {
+    return new SyntaxException(Diagnostic.error(Phase.SYNTAX, message, token.span()));
+  }
 }

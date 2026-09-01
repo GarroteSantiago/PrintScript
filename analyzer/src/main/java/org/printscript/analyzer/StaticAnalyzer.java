@@ -16,69 +16,77 @@ import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 
 public final class StaticAnalyzer {
-    private final NamingStyleRules namingStyleRules;
+  private final NamingStyleRules namingStyleRules;
 
-    public StaticAnalyzer() {
-        this(NamingStyleRules.v1());
+  public StaticAnalyzer() {
+    this(NamingStyleRules.v1());
+  }
+
+  public StaticAnalyzer(NamingStyleRules namingStyleRules) {
+    this.namingStyleRules = namingStyleRules;
+  }
+
+  public List<Diagnostic> analyze(
+      ProgramSyntax program, SemanticModel semanticModel, AnalyzerConfig config) {
+    List<Diagnostic> diagnostics = new ArrayList<>();
+    for (StatementSyntax statement : program.statements()) {
+      diagnostics.addAll(analyze(statement, semanticModel, config));
     }
+    return List.copyOf(diagnostics);
+  }
 
-    public StaticAnalyzer(NamingStyleRules namingStyleRules) {
-        this.namingStyleRules = namingStyleRules;
-    }
+  public List<Diagnostic> analyze(
+      StatementSyntax statement, SemanticModel semanticModel, AnalyzerConfig config) {
+    List<Diagnostic> diagnostics = new ArrayList<>();
+    analyze(statement, semanticModel, config, diagnostics::add);
+    return List.copyOf(diagnostics);
+  }
 
-    public List<Diagnostic> analyze(ProgramSyntax program, SemanticModel semanticModel, AnalyzerConfig config) {
-        List<Diagnostic> diagnostics = new ArrayList<>();
-        for (StatementSyntax statement : program.statements()) {
-            diagnostics.addAll(analyze(statement, semanticModel, config));
+  public void analyze(
+      StatementSyntax statement,
+      SemanticModel semanticModel,
+      AnalyzerConfig config,
+      Consumer<Diagnostic> diagnostics) {
+    switch (statement) {
+      case VariableDeclarationSyntax declaration ->
+          checkName(
+              declaration.identifier().semanticLexeme(),
+              declaration.identifier().span(),
+              config,
+              diagnostics);
+      case AssignmentSyntax ignored -> {}
+      case ExpressionStatementSyntax expressionStatement -> {
+        if (config.restrictPrintlnToSimpleArguments()
+            && expressionStatement.expression() instanceof CallExpressionSyntax call
+            && semanticModel
+                .resolveCall(call)
+                .map(signature -> "println".equals(signature.name()))
+                .orElse(false)
+            && !call.arguments().isEmpty()
+            && !(call.arguments().getFirst() instanceof IdentifierExpressionSyntax)
+            && !(call.arguments().getFirst() instanceof LiteralExpressionSyntax)) {
+          diagnostics.accept(
+              error(
+                  "println argument must be an identifier or literal",
+                  call.arguments().getFirst().span()));
         }
-        return List.copyOf(diagnostics);
+      }
     }
+  }
 
-    public List<Diagnostic> analyze(StatementSyntax statement, SemanticModel semanticModel, AnalyzerConfig config) {
-        List<Diagnostic> diagnostics = new ArrayList<>();
-        analyze(statement, semanticModel, config, diagnostics::add);
-        return List.copyOf(diagnostics);
+  private void checkName(
+      String name,
+      org.printscript.source.SourceSpan span,
+      AnalyzerConfig config,
+      Consumer<Diagnostic> diagnostics) {
+    boolean valid = namingStyleRules.matches(config.namingStyle(), name);
+    if (!valid) {
+      diagnostics.accept(
+          error("Identifier '" + name + "' does not match " + config.namingStyle(), span));
     }
+  }
 
-    public void analyze(
-            StatementSyntax statement,
-            SemanticModel semanticModel,
-            AnalyzerConfig config,
-            Consumer<Diagnostic> diagnostics) {
-        switch (statement) {
-            case VariableDeclarationSyntax declaration ->
-                checkName(declaration.identifier().semanticLexeme(), declaration.identifier().span(), config,
-                        diagnostics);
-            case AssignmentSyntax ignored -> {
-            }
-            case ExpressionStatementSyntax expressionStatement -> {
-                if (config.restrictPrintlnToSimpleArguments()
-                        && expressionStatement.expression() instanceof CallExpressionSyntax call
-                        && semanticModel.resolveCall(call).map(signature -> signature.name().equals("println"))
-                                .orElse(false)
-                        && !call.arguments().isEmpty()
-                        && !(call.arguments().getFirst() instanceof IdentifierExpressionSyntax)
-                        && !(call.arguments().getFirst() instanceof LiteralExpressionSyntax)) {
-                    diagnostics.accept(error(
-                            "println argument must be an identifier or literal",
-                            call.arguments().getFirst().span()));
-                }
-            }
-        }
-    }
-
-    private void checkName(
-            String name,
-            org.printscript.source.SourceSpan span,
-            AnalyzerConfig config,
-            Consumer<Diagnostic> diagnostics) {
-        boolean valid = namingStyleRules.matches(config.namingStyle(), name);
-        if (!valid) {
-            diagnostics.accept(error("Identifier '" + name + "' does not match " + config.namingStyle(), span));
-        }
-    }
-
-    private Diagnostic error(String message, org.printscript.source.SourceSpan span) {
-        return Diagnostic.error(Phase.ANALYZER, message, span);
-    }
+  private Diagnostic error(String message, org.printscript.source.SourceSpan span) {
+    return Diagnostic.error(Phase.ANALYZER, message, span);
+  }
 }
