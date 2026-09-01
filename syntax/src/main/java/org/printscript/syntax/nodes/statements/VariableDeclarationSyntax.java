@@ -1,20 +1,26 @@
 package org.printscript.syntax.nodes.statements;
 
+import java.util.Optional;
 import org.printscript.source.SourceSpan;
 import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
 import org.printscript.tokens.SyntaxToken;
+import org.printscript.tokens.TokenType;
 
 public record VariableDeclarationSyntax(
-    SyntaxToken letKeyword,
+    SyntaxToken keyword,
     SyntaxToken identifier,
     SyntaxToken colon,
     SyntaxToken type,
-    SyntaxToken equals,
-    ExpressionSyntax initializer,
+    Optional<SyntaxToken> equals,
+    Optional<ExpressionSyntax> initializer,
     SyntaxToken semicolon)
     implements StatementSyntax {
+  public boolean isConst() {
+    return keyword.type() == TokenType.CONST;
+  }
+
   @Override
   public SourceSpan span() {
-    return new SourceSpan(letKeyword.span().start(), semicolon.span().end());
+    return new SourceSpan(keyword.span().start(), semicolon.span().end());
   }
 }

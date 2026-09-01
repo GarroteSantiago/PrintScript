@@ -63,6 +63,8 @@ public final class Lexer implements TokenSource {
       case '/' -> token(TokenType.SLASH, "/", "/", leadingTrivia, start);
       case '(' -> token(TokenType.LEFT_PAREN, "(", "(", leadingTrivia, start);
       case ')' -> token(TokenType.RIGHT_PAREN, ")", ")", leadingTrivia, start);
+      case '{' -> token(TokenType.LEFT_BRACE, "{", "{", leadingTrivia, start);
+      case '}' -> token(TokenType.RIGHT_BRACE, "}", "}", leadingTrivia, start);
       case '\'', '"' -> string(c, leadingTrivia, start);
       default -> {
         if (Character.isDigit(c)) {

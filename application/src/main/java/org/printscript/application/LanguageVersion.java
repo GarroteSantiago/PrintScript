@@ -5,6 +5,7 @@ public record LanguageVersion(int major, int minor, int patch) {
   private static final int MAJOR_MINOR_PATCH_PARTS = 3;
 
   public static final LanguageVersion V1_0_0 = new LanguageVersion(1, 0, 0);
+  public static final LanguageVersion V1_1_0 = new LanguageVersion(1, 1, 0);
 
   public static LanguageVersion parse(String raw) {
     String[] parts = raw.split("\\.");
@@ -20,5 +21,9 @@ public record LanguageVersion(int major, int minor, int patch) {
 
   public boolean supportsV1() {
     return major == 1 && minor == 0;
+  }
+
+  public boolean supportsV1_1() {
+    return major == 1 && minor == 1;
   }
 }

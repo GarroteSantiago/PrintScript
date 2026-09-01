@@ -12,7 +12,9 @@ import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
 import org.printscript.syntax.nodes.statements.AssignmentSyntax;
+import org.printscript.syntax.nodes.statements.BlockStatementSyntax;
 import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.syntax.nodes.statements.IfStatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.testkit.TestSources;
@@ -48,12 +50,14 @@ class SyntaxTreeBuilderTest {
   private void addStatement(StatementSyntax statement, List<SyntaxToken> tokens) {
     switch (statement) {
       case VariableDeclarationSyntax declaration -> {
-        tokens.add(declaration.letKeyword());
+        tokens.add(declaration.keyword());
         tokens.add(declaration.identifier());
         tokens.add(declaration.colon());
         tokens.add(declaration.type());
-        tokens.add(declaration.equals());
-        addExpression(declaration.initializer(), tokens);
+        if (declaration.equals().isPresent()) {
+          tokens.add(declaration.equals().get());
+          addExpression(declaration.initializer().orElseThrow(), tokens);
+        }
         tokens.add(declaration.semicolon());
       }
       case AssignmentSyntax assignment -> {
@@ -65,6 +69,22 @@ class SyntaxTreeBuilderTest {
       case ExpressionStatementSyntax expressionStatement -> {
         addExpression(expressionStatement.expression(), tokens);
         tokens.add(expressionStatement.semicolon());
+      }
+      case IfStatementSyntax ifStatement -> {
+        tokens.add(ifStatement.ifKeyword());
+        tokens.add(ifStatement.leftParen());
+        addExpression(ifStatement.condition(), tokens);
+        tokens.add(ifStatement.rightParen());
+        addStatement(ifStatement.thenBlock(), tokens);
+        if (ifStatement.elseKeyword().isPresent()) {
+          tokens.add(ifStatement.elseKeyword().get());
+          addStatement(ifStatement.elseBlock().orElseThrow(), tokens);
+        }
+      }
+      case BlockStatementSyntax block -> {
+        tokens.add(block.leftBrace());
+        for (StatementSyntax inner : block.statements()) addStatement(inner, tokens);
+        tokens.add(block.rightBrace());
       }
     }
   }

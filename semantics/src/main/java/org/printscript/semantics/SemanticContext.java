@@ -3,6 +3,7 @@ package org.printscript.semantics;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
 import org.printscript.syntax.TypeAnnotationTable;
@@ -13,7 +14,9 @@ import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
 import org.printscript.syntax.nodes.statements.AssignmentSyntax;
+import org.printscript.syntax.nodes.statements.BlockStatementSyntax;
 import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.syntax.nodes.statements.IfStatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 
@@ -75,16 +78,29 @@ public final class SemanticContext {
               error("Variable '" + name + "' is already declared", declaration.span()));
           return;
         }
-        TypeName initializerType = typeOf(declaration.initializer(), nextSymbols, model);
+        if (declaration.initializer().isEmpty()) {
+          if (declaration.isConst()) {
+            model.addDiagnostic(
+                error("const variable '" + name + "' requires an initializer", declaration.span()));
+            return;
+          }
+          nextSymbols.put(
+              name, new VariableSymbol(name, declaredType, !declaration.isConst(), declaration));
+          return;
+        }
+        ExpressionSyntax initializer = declaration.initializer().get();
+        TypeName initializerType =
+            typeOf(initializer, nextSymbols, model, Optional.of(declaredType));
         if (initializerType == null) return;
         if (initializerType != declaredType) {
           model.addDiagnostic(
               error(
                   "Cannot assign " + printable(initializerType) + " to " + printable(declaredType),
-                  declaration.initializer().span()));
+                  initializer.span()));
           return;
         }
-        nextSymbols.put(name, new VariableSymbol(name, declaredType, declaration));
+        nextSymbols.put(
+            name, new VariableSymbol(name, declaredType, !declaration.isConst(), declaration));
       }
       case AssignmentSyntax assignment -> {
         String name = assignment.identifier().semanticLexeme();
@@ -93,7 +109,13 @@ public final class SemanticContext {
           model.addDiagnostic(error("Variable '" + name + "' is not declared", assignment.span()));
           return;
         }
-        TypeName valueType = typeOf(assignment.value(), nextSymbols, model);
+        if (!symbol.mutable()) {
+          model.addDiagnostic(
+              error("Cannot assign to const variable '" + name + "'", assignment.span()));
+          return;
+        }
+        TypeName valueType =
+            typeOf(assignment.value(), nextSymbols, model, Optional.of(symbol.type()));
         if (valueType != null && valueType != symbol.type()) {
           model.addDiagnostic(
               error(
@@ -103,6 +125,31 @@ public final class SemanticContext {
       }
       case ExpressionStatementSyntax expressionStatement ->
           typeOf(expressionStatement.expression(), nextSymbols, model);
+      case IfStatementSyntax ifStatement -> {
+        TypeName conditionType = typeOf(ifStatement.condition(), nextSymbols, model);
+        if (conditionType != null && conditionType != TypeName.BOOLEAN) {
+          model.addDiagnostic(
+              error(
+                  "if condition must be boolean, got " + printable(conditionType),
+                  ifStatement.condition().span()));
+        }
+        validateBlock(ifStatement.thenBlock(), nextSymbols, model);
+        ifStatement
+            .elseBlock()
+            .ifPresent(elseBlock -> validateBlock(elseBlock, nextSymbols, model));
+      }
+      case BlockStatementSyntax block -> validateBlock(block, nextSymbols, model);
+    }
+  }
+
+  private void validateBlock(
+      BlockStatementSyntax block,
+      Map<String, VariableSymbol> outerSymbols,
+      SemanticModel.Builder model) {
+    Map<String, VariableSymbol> blockSymbols = new HashMap<>(outerSymbols);
+    for (StatementSyntax statement : block.statements()) {
+      if (model.hasErrors()) return;
+      validateStatement(statement, blockSymbols, model);
     }
   }
 
@@ -110,12 +157,20 @@ public final class SemanticContext {
       ExpressionSyntax expression,
       Map<String, VariableSymbol> symbols,
       SemanticModel.Builder model) {
+    return typeOf(expression, symbols, model, Optional.empty());
+  }
+
+  private TypeName typeOf(
+      ExpressionSyntax expression,
+      Map<String, VariableSymbol> symbols,
+      SemanticModel.Builder model,
+      Optional<TypeName> expected) {
     TypeName type =
         switch (expression) {
           case LiteralExpressionSyntax literal -> literal.literalType();
           case IdentifierExpressionSyntax identifier -> identifierType(identifier, symbols, model);
           case BinaryExpressionSyntax binary -> binaryType(binary, symbols, model);
-          case CallExpressionSyntax call -> callType(call, symbols, model);
+          case CallExpressionSyntax call -> callType(call, symbols, model, expected);
         };
     model.setType(expression, type);
     return type;
@@ -161,7 +216,10 @@ public final class SemanticContext {
   }
 
   private TypeName callType(
-      CallExpressionSyntax call, Map<String, VariableSymbol> symbols, SemanticModel.Builder model) {
+      CallExpressionSyntax call,
+      Map<String, VariableSymbol> symbols,
+      SemanticModel.Builder model,
+      Optional<TypeName> expected) {
     String callee = call.callee().semanticLexeme();
     BuiltinSignature signature = builtins.find(callee).orElse(null);
     if (signature == null) {
@@ -181,21 +239,31 @@ public final class SemanticContext {
       return null;
     }
     for (int i = 0; i < call.arguments().size(); i++) {
-      TypeName actual = typeOf(call.arguments().get(i), symbols, model);
+      TypeName parameterType = signature.parameterTypes().get(i);
+      TypeName actual = typeOf(call.arguments().get(i), symbols, model, Optional.of(parameterType));
       if (actual == null) return null;
-      TypeName expected = signature.parameterTypes().get(i);
-      if (actual != expected) {
+      if (!signature.printsAnyType() && actual != parameterType) {
         model.addDiagnostic(
             error(
                 "Callable '"
                     + callee
                     + "' expects "
-                    + printable(expected)
+                    + printable(parameterType)
                     + " but received "
                     + printable(actual),
                 call.arguments().get(i).span()));
         return null;
       }
+    }
+    if (signature.contextual()) {
+      if (expected.isEmpty()) {
+        model.addDiagnostic(
+            error(
+                "'" + callee + "' can only be used as a variable initializer or println argument",
+                call.span()));
+        return null;
+      }
+      return expected.get();
     }
     return signature.returnType();
   }

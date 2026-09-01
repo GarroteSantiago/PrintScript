@@ -5,17 +5,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.printscript.analyzer.AnalyzerConfig;
 import org.printscript.analyzer.NamingStyle;
-import org.printscript.formatter.FormatterConfig;
+import org.printscript.formatter.FormatterConfigProvider;
 
 class TomlPrintScriptConfigReaderTest {
   @TempDir Path tempDir;
 
-  private FormatterConfig formatterConfig;
+  private FormatterConfigProvider formatterConfig;
   private AnalyzerConfig analyzerConfig;
 
   @BeforeEach
@@ -49,27 +50,29 @@ class TomlPrintScriptConfigReaderTest {
 
   @Test
   void readsSpacesBeforeSemicolonFromFormatterSection() {
-    assertEquals(1, formatterConfig.spacesBeforeSemicolon(), "spacesBeforeSemicolon");
+    assertEquals(Optional.of(1), formatterConfig.spacesBeforeSemicolon(), "spacesBeforeSemicolon");
   }
 
   @Test
   void readsSpacesAfterSemicolonFromFormatterSection() {
-    assertEquals(0, formatterConfig.spacesAfterSemicolon(), "spacesAfterSemicolon");
+    assertEquals(Optional.of(0), formatterConfig.spacesAfterSemicolon(), "spacesAfterSemicolon");
   }
 
   @Test
   void readsSpacesAroundAssignmentFromFormatterSection() {
-    assertEquals(1, formatterConfig.spacesAroundAssignment(), "spacesAroundAssignment");
+    assertEquals(
+        Optional.of(1), formatterConfig.spacesAroundAssignment(), "spacesAroundAssignment");
   }
 
   @Test
   void readsSpacesAroundOperatorsFromFormatterSection() {
-    assertEquals(1, formatterConfig.spacesAroundOperators(), "spacesAroundOperators");
+    assertEquals(Optional.of(1), formatterConfig.spacesAroundOperators(), "spacesAroundOperators");
   }
 
   @Test
   void readsBlankLinesBeforePrintlnFromFormatterSection() {
-    assertEquals(2, formatterConfig.blankLinesBeforePrintln(), "blankLinesBeforePrintln");
+    assertEquals(
+        Optional.of(2), formatterConfig.blankLinesBeforePrintln(), "blankLinesBeforePrintln");
   }
 
   @Test

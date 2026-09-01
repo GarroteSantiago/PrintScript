@@ -5,7 +5,9 @@ import java.util.Optional;
 import org.printscript.syntax.TypeName;
 
 public final class BuiltinRegistry {
-  private static final TypeName UNIT = null;
+  private static final String PRINTLN = "println";
+  private static final String READ_INPUT = "readInput";
+  private static final String READ_ENV = "readEnv";
   private final Map<String, BuiltinSignature> signatures;
 
   private BuiltinRegistry(Map<String, BuiltinSignature> signatures) {
@@ -14,8 +16,18 @@ public final class BuiltinRegistry {
 
   public static BuiltinRegistry v1() {
     return new BuiltinRegistry(
+        Map.of(PRINTLN, BuiltinSignature.printing(PRINTLN, TypeName.STRING)));
+  }
+
+  public static BuiltinRegistry v1_1() {
+    return new BuiltinRegistry(
         Map.of(
-            "println", new BuiltinSignature("println", java.util.List.of(TypeName.STRING), UNIT)));
+            PRINTLN,
+            BuiltinSignature.printing(PRINTLN, TypeName.STRING),
+            READ_INPUT,
+            BuiltinSignature.contextual(READ_INPUT, java.util.List.of(TypeName.STRING)),
+            READ_ENV,
+            BuiltinSignature.contextual(READ_ENV, java.util.List.of(TypeName.STRING))));
   }
 
   public Optional<BuiltinSignature> find(String name) {

@@ -3,9 +3,11 @@ package org.example.cli;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import org.printscript.application.AnalysisResult;
 import org.printscript.application.CommandResult;
@@ -15,6 +17,8 @@ import org.printscript.application.PrintScriptConfigReader;
 import org.printscript.application.ProgressReporter;
 import org.printscript.application.TomlPrintScriptConfigReader;
 import org.printscript.diagnostics.Diagnostic;
+import org.printscript.interpreter.EnvironmentPort;
+import org.printscript.interpreter.InputPort;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -100,12 +104,28 @@ public class App implements Callable<Integer> {
     private String version;
 
     @Override
+    @SuppressWarnings(
+        "PMD.CloseResource") // stdin wraps System.in; closing it would close System.in itself
     public Integer call() throws IOException {
+      BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
+      InputPort input =
+          prompt -> {
+            System.out.print(prompt);
+            System.out.flush();
+            try {
+              return stdin.readLine();
+            } catch (IOException exception) {
+              throw new UncheckedIOException(exception);
+            }
+          };
+      EnvironmentPort env = name -> Optional.ofNullable(System.getenv(name));
       CommandResult<?> result =
           app.printScript.execute(
               Files.newBufferedReader(sourceFile),
               LanguageVersion.parse(version),
               System.out::println,
+              input,
+              env,
               app.progress);
       if (!result.isSuccess()) return app.printDiagnostics(result.diagnostics());
       return 0;

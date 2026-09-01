@@ -3,6 +3,7 @@ package org.printscript.formatter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.printscript.syntax.nodes.ProgramSyntax;
 import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
@@ -10,7 +11,9 @@ import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
 import org.printscript.syntax.nodes.statements.AssignmentSyntax;
+import org.printscript.syntax.nodes.statements.BlockStatementSyntax;
 import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.syntax.nodes.statements.IfStatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.tokens.SyntaxToken;
@@ -27,11 +30,11 @@ public final class PrintScriptFormatter {
     this.spacingRules = spacingRules;
   }
 
-  public Session newSession(FormatterConfig config) {
+  public Session newSession(FormatterConfigProvider config) {
     return new Session(config);
   }
 
-  public String format(ProgramSyntax program, FormatterConfig config) {
+  public String format(ProgramSyntax program, FormatterConfigProvider config) {
     Session session = newSession(config);
     StringBuilder out = new StringBuilder();
     for (StatementSyntax statement : program.statements()) {
@@ -42,10 +45,11 @@ public final class PrintScriptFormatter {
   }
 
   public final class Session {
-    private final FormatterConfig config;
+    private final FormatterConfigProvider config;
     private SyntaxToken previous;
+    private boolean previousStatementIsPrintln;
 
-    private Session(FormatterConfig config) {
+    private Session(FormatterConfigProvider config) {
       this.config = config;
     }
 
@@ -60,11 +64,23 @@ public final class PrintScriptFormatter {
     }
 
     public void format(StatementSyntax statement, Appendable out) throws IOException {
-      for (SyntaxToken token : flatten(statement)) {
-        out.append(rewriteLeadingTrivia(previous, token, config));
+      boolean previousWasPrintln = previousStatementIsPrintln;
+      for (PositionedToken positioned : flatten(statement)) {
+        SyntaxToken token = positioned.token();
+        String leadingTrivia = rewriteLeadingTrivia(previous, token, config, previousWasPrintln);
+        String trivia = leadingTrivia;
+        if (positioned.depth() > 0 && hasLineBreak(trivia)) {
+          trivia =
+              config
+                  .blockIndentSpaces()
+                  .map(spaces -> reindent(leadingTrivia, positioned.depth(), spaces))
+                  .orElse(trivia);
+        }
+        out.append(trivia);
         out.append(token.text());
         previous = token;
       }
+      previousStatementIsPrintln = isPrintlnStatement(statement);
     }
 
     public String finish(SyntaxToken eof) {
@@ -76,87 +92,137 @@ public final class PrintScriptFormatter {
     }
   }
 
-  private List<SyntaxToken> flatten(StatementSyntax statement) {
-    List<SyntaxToken> tokens = new ArrayList<>();
-    addStatement(statement, tokens);
+  private record PositionedToken(SyntaxToken token, int depth) {}
+
+  private List<PositionedToken> flatten(StatementSyntax statement) {
+    List<PositionedToken> tokens = new ArrayList<>();
+    addStatement(statement, tokens, 0);
     return List.copyOf(tokens);
   }
 
-  private void addStatement(StatementSyntax statement, List<SyntaxToken> tokens) {
+  private void addStatement(StatementSyntax statement, List<PositionedToken> tokens, int depth) {
     switch (statement) {
       case VariableDeclarationSyntax declaration -> {
-        tokens.add(declaration.letKeyword());
-        tokens.add(declaration.identifier());
-        tokens.add(declaration.colon());
-        tokens.add(declaration.type());
-        tokens.add(declaration.equals());
-        addExpression(declaration.initializer(), tokens);
-        tokens.add(declaration.semicolon());
+        tokens.add(new PositionedToken(declaration.keyword(), depth));
+        tokens.add(new PositionedToken(declaration.identifier(), depth));
+        tokens.add(new PositionedToken(declaration.colon(), depth));
+        tokens.add(new PositionedToken(declaration.type(), depth));
+        if (declaration.equals().isPresent()) {
+          tokens.add(new PositionedToken(declaration.equals().get(), depth));
+          addExpression(declaration.initializer().orElseThrow(), tokens, depth);
+        }
+        tokens.add(new PositionedToken(declaration.semicolon(), depth));
       }
       case AssignmentSyntax assignment -> {
-        tokens.add(assignment.identifier());
-        tokens.add(assignment.equals());
-        addExpression(assignment.value(), tokens);
-        tokens.add(assignment.semicolon());
+        tokens.add(new PositionedToken(assignment.identifier(), depth));
+        tokens.add(new PositionedToken(assignment.equals(), depth));
+        addExpression(assignment.value(), tokens, depth);
+        tokens.add(new PositionedToken(assignment.semicolon(), depth));
       }
       case ExpressionStatementSyntax expressionStatement -> {
-        addExpression(expressionStatement.expression(), tokens);
-        tokens.add(expressionStatement.semicolon());
+        addExpression(expressionStatement.expression(), tokens, depth);
+        tokens.add(new PositionedToken(expressionStatement.semicolon(), depth));
+      }
+      case IfStatementSyntax ifStatement -> {
+        tokens.add(new PositionedToken(ifStatement.ifKeyword(), depth));
+        tokens.add(new PositionedToken(ifStatement.leftParen(), depth));
+        addExpression(ifStatement.condition(), tokens, depth);
+        tokens.add(new PositionedToken(ifStatement.rightParen(), depth));
+        addBlock(ifStatement.thenBlock(), tokens, depth);
+        if (ifStatement.elseKeyword().isPresent()) {
+          tokens.add(new PositionedToken(ifStatement.elseKeyword().get(), depth));
+          addBlock(ifStatement.elseBlock().orElseThrow(), tokens, depth);
+        }
+      }
+      case BlockStatementSyntax block -> addBlock(block, tokens, depth);
+    }
+  }
+
+  private void addBlock(BlockStatementSyntax block, List<PositionedToken> tokens, int depth) {
+    tokens.add(new PositionedToken(block.leftBrace(), depth));
+    for (StatementSyntax inner : block.statements()) {
+      addStatement(inner, tokens, depth + 1);
+    }
+    tokens.add(new PositionedToken(block.rightBrace(), depth));
+  }
+
+  private void addExpression(ExpressionSyntax expression, List<PositionedToken> tokens, int depth) {
+    switch (expression) {
+      case LiteralExpressionSyntax literal ->
+          tokens.add(new PositionedToken(literal.literal(), depth));
+      case IdentifierExpressionSyntax identifier ->
+          tokens.add(new PositionedToken(identifier.identifier(), depth));
+      case BinaryExpressionSyntax binary -> {
+        addExpression(binary.left(), tokens, depth);
+        tokens.add(new PositionedToken(binary.operator(), depth));
+        addExpression(binary.right(), tokens, depth);
+      }
+      case CallExpressionSyntax call -> {
+        tokens.add(new PositionedToken(call.callee(), depth));
+        tokens.add(new PositionedToken(call.leftParen(), depth));
+        for (ExpressionSyntax argument : call.arguments()) {
+          addExpression(argument, tokens, depth);
+        }
+        tokens.add(new PositionedToken(call.rightParen(), depth));
       }
     }
   }
 
-  private void addExpression(ExpressionSyntax expression, List<SyntaxToken> tokens) {
-    switch (expression) {
-      case LiteralExpressionSyntax literal -> tokens.add(literal.literal());
-      case IdentifierExpressionSyntax identifier -> tokens.add(identifier.identifier());
-      case BinaryExpressionSyntax binary -> {
-        addExpression(binary.left(), tokens);
-        tokens.add(binary.operator());
-        addExpression(binary.right(), tokens);
-      }
-      case CallExpressionSyntax call -> {
-        tokens.add(call.callee());
-        tokens.add(call.leftParen());
-        for (ExpressionSyntax argument : call.arguments()) {
-          addExpression(argument, tokens);
-        }
-        tokens.add(call.rightParen());
-      }
-    }
+  private String reindent(String trivia, int depth, int blockIndentSpaces) {
+    int lastNewline = trivia.lastIndexOf('\n');
+    return trivia.substring(0, lastNewline + 1) + " ".repeat(depth * blockIndentSpaces);
   }
 
   private String rewriteLeadingTrivia(
-      SyntaxToken previous, SyntaxToken token, FormatterConfig config) {
+      SyntaxToken previous,
+      SyntaxToken token,
+      FormatterConfigProvider config,
+      boolean previousStatementIsPrintln) {
     if (previous == null) {
       return token.leadingTrivia();
     }
     if (containsComment(token.leadingTrivia())) {
       if (previous.type() == TokenType.SEMICOLON) {
-        return rewriteWhitespaceBeforeFirstComment(
-            token.leadingTrivia(), " ".repeat(config.spacesAfterSemicolon()));
+        return config
+            .spacesAfterSemicolon()
+            .map(
+                spaces ->
+                    rewriteWhitespaceBeforeFirstComment(token.leadingTrivia(), " ".repeat(spaces)))
+            .orElse(token.leadingTrivia());
       }
       return token.leadingTrivia();
     }
-    if (startsPrintln(token) && previous.type() == TokenType.SEMICOLON) {
-      return "\n".repeat(config.blankLinesBeforePrintln() + 1);
+    if (previousStatementIsPrintln && previous.type() == TokenType.SEMICOLON) {
+      Optional<String> blankLines = config.blankLinesBeforePrintln().map(n -> "\n".repeat(n + 1));
+      if (blankLines.isPresent()) {
+        return blankLines.get();
+      }
     }
-    return spacingRules.leadingTriviaFor(token, previous, config);
+    return spacingRules.leadingTriviaFor(token, previous, config).orElse(token.leadingTrivia());
   }
 
   private String rewriteTrailingTrivia(
-      SyntaxToken previous, SyntaxToken eof, FormatterConfig config) {
+      SyntaxToken previous, SyntaxToken eof, FormatterConfigProvider config) {
     if (previous == null || containsComment(eof.leadingTrivia())) {
       return eof.leadingTrivia();
     }
     if (previous.type() == TokenType.SEMICOLON && !hasLineBreak(eof.leadingTrivia())) {
-      return "\n" + " ".repeat(config.spacesAfterSemicolon());
+      return config
+          .spacesAfterSemicolon()
+          .map(spaces -> "\n" + " ".repeat(spaces))
+          .orElse(eof.leadingTrivia());
     }
     return eof.leadingTrivia();
   }
 
-  private boolean startsPrintln(SyntaxToken token) {
-    return token.type() == TokenType.IDENTIFIER && "println".equals(token.semanticLexeme());
+  private boolean isPrintlnStatement(StatementSyntax statement) {
+    if (!(statement instanceof ExpressionStatementSyntax expressionStatement)) {
+      return false;
+    }
+    if (!(expressionStatement.expression() instanceof CallExpressionSyntax call)) {
+      return false;
+    }
+    return "println".equals(call.callee().semanticLexeme());
   }
 
   private boolean containsComment(String trivia) {

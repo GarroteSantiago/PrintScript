@@ -2,7 +2,9 @@ package org.example.cli;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -16,13 +18,59 @@ import org.printscript.application.PrintScriptConfigReader;
 import org.printscript.formatter.FormatterConfig;
 
 class AppTest {
+  private static final String SOURCE_FILE_NAME = "source.pisp";
+  private static final String SOURCE_FLAG = "--source";
+  private static final String VERSION_FLAG = "--version";
+  private static final String EXPECTED_SUCCESSFUL_EXIT_CODE = "expected successful exit code";
+
   @TempDir Path tempDir;
+
+  @Test
+  void executeCommandReadingStdinExitsSuccessfully() throws Exception {
+    ExecuteRun run = runExecuteCommandWithStdin();
+
+    assertEquals(0, run.exitCode(), EXPECTED_SUCCESSFUL_EXIT_CODE);
+  }
+
+  @Test
+  void executeCommandReadingStdinWritesPromptAndOutput() throws Exception {
+    ExecuteRun run = runExecuteCommandWithStdin();
+
+    assertEquals(
+        "Name: Ada\n", run.stdout(), "expected the prompt then the println output on stdout");
+  }
+
+  @SuppressWarnings(
+      "PMD.CloseResource") // originalOut/originalIn are saved references to restore, not ours to
+  // close
+  private ExecuteRun runExecuteCommandWithStdin() throws Exception {
+    Path source = tempDir.resolve(SOURCE_FILE_NAME);
+    Files.writeString(source, "let name: string = readInput(\"Name: \");\nprintln(name);");
+
+    int exitCode;
+    String stdout;
+    PrintStream originalOut = System.out;
+    InputStream originalIn = System.in;
+    try (ByteArrayOutputStream capturedOut = new ByteArrayOutputStream();
+        PrintStream redirectedOut = new PrintStream(capturedOut, true, StandardCharsets.UTF_8)) {
+      System.setOut(redirectedOut);
+      System.setIn(new ByteArrayInputStream("Ada\n".getBytes(StandardCharsets.UTF_8)));
+      exitCode = new App().run("execute", SOURCE_FLAG, source.toString(), VERSION_FLAG, "1.1");
+      stdout = capturedOut.toString(StandardCharsets.UTF_8);
+    } finally {
+      System.setOut(originalOut);
+      System.setIn(originalIn);
+    }
+    return new ExecuteRun(exitCode, stdout);
+  }
+
+  private record ExecuteRun(int exitCode, String stdout) {}
 
   @Test
   void formatCommandExitsSuccessfully() throws Exception {
     FormatRun run = runFormatCommandWithInjectedConfigReader();
 
-    assertEquals(0, run.exitCode(), "expected successful exit code");
+    assertEquals(0, run.exitCode(), EXPECTED_SUCCESSFUL_EXIT_CODE);
   }
 
   @Test
@@ -38,7 +86,7 @@ class AppTest {
     FormatRun run = runFormatCommandWithInjectedConfigReader();
 
     assertEquals(
-        "let text: string = \"hello\";\n\nprintln(text);\n",
+        "let text: string = \"hello\";\nprintln(text);\n",
         run.stdout(),
         "expected formatted source on stdout");
   }
@@ -46,7 +94,7 @@ class AppTest {
   @SuppressWarnings(
       "PMD.CloseResource") // originalOut is a saved reference to restore, not ours to close
   private FormatRun runFormatCommandWithInjectedConfigReader() throws Exception {
-    Path source = tempDir.resolve("source.pisp");
+    Path source = tempDir.resolve(SOURCE_FILE_NAME);
     Path config = tempDir.resolve("config.toml");
     Files.writeString(source, "let text: string = \"hello\";\nprintln(text);");
     Files.writeString(config, "[formatter]\n");
@@ -62,9 +110,9 @@ class AppTest {
           new App(reader)
               .run(
                   "format",
-                  "--source",
+                  SOURCE_FLAG,
                   source.toString(),
-                  "--version",
+                  VERSION_FLAG,
                   "1.0",
                   "--config",
                   config.toString());
@@ -79,7 +127,7 @@ class AppTest {
   void formatCommandPromptsForMissingConfigFileExitsSuccessfully() throws Exception {
     PromptFormatRun run = runFormatCommandWithMissingConfigFile();
 
-    assertEquals(0, run.exitCode(), "expected successful exit code");
+    assertEquals(0, run.exitCode(), EXPECTED_SUCCESSFUL_EXIT_CODE);
   }
 
   @Test
@@ -108,7 +156,7 @@ class AppTest {
   @SuppressWarnings(
       "PMD.CloseResource") // originalOut is a saved reference to restore, not ours to close
   private PromptFormatRun runFormatCommandWithMissingConfigFile() throws Exception {
-    Path source = tempDir.resolve("source.pisp");
+    Path source = tempDir.resolve(SOURCE_FILE_NAME);
     Path config = tempDir.resolve("config.toml");
     Files.writeString(source, "let text: string = \"hello\";");
     Files.writeString(config, "[formatter]\n");
@@ -122,7 +170,8 @@ class AppTest {
         PrintStream redirectedOut = new PrintStream(capturedOut, true, StandardCharsets.UTF_8)) {
       System.setOut(redirectedOut);
       exitCode =
-          new App(reader, prompt).run("format", "--source", source.toString(), "--version", "1.0");
+          new App(reader, prompt)
+              .run("format", SOURCE_FLAG, source.toString(), VERSION_FLAG, "1.0");
       stdout = capturedOut.toString(StandardCharsets.UTF_8);
     } finally {
       System.setOut(originalOut);
@@ -134,7 +183,7 @@ class AppTest {
   void analyzeCommandPromptsForMissingConfigFileExitsSuccessfully() throws Exception {
     AnalyzeRun run = runAnalyzeCommandWithMissingConfigFile();
 
-    assertEquals(0, run.exitCode(), "expected successful exit code");
+    assertEquals(0, run.exitCode(), EXPECTED_SUCCESSFUL_EXIT_CODE);
   }
 
   @Test
@@ -153,7 +202,7 @@ class AppTest {
   }
 
   private AnalyzeRun runAnalyzeCommandWithMissingConfigFile() throws Exception {
-    Path source = tempDir.resolve("source.pisp");
+    Path source = tempDir.resolve(SOURCE_FILE_NAME);
     Path config = tempDir.resolve("config.toml");
     Files.writeString(source, "let text: string = \"hello\";");
     Files.writeString(config, "[analyzer]\n");
@@ -161,7 +210,7 @@ class AppTest {
     PromptStub prompt = new PromptStub(config);
 
     int exitCode =
-        new App(reader, prompt).run("analyze", "--source", source.toString(), "--version", "1.0");
+        new App(reader, prompt).run("analyze", SOURCE_FLAG, source.toString(), VERSION_FLAG, "1.0");
 
     return new AnalyzeRun(exitCode, config, reader, prompt.prompts);
   }
@@ -181,7 +230,7 @@ class AppTest {
     @Override
     public FormatterConfig readFormatterConfig(Path path) {
       formatterPath = path;
-      return new FormatterConfig(0, 0, 1, 1, 1);
+      return new FormatterConfig(0, 0, 1, 1, 1, 2);
     }
 
     @Override

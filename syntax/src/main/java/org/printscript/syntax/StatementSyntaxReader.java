@@ -2,6 +2,7 @@ package org.printscript.syntax;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
 import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
@@ -10,7 +11,9 @@ import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
 import org.printscript.syntax.nodes.statements.AssignmentSyntax;
+import org.printscript.syntax.nodes.statements.BlockStatementSyntax;
 import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.syntax.nodes.statements.IfStatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.tokens.SyntaxException;
@@ -50,8 +53,11 @@ public final class StatementSyntaxReader implements StatementSource {
   }
 
   private StatementSyntax statement() {
-    if (match(TokenType.LET)) {
+    if (match(TokenType.LET, TokenType.CONST)) {
       return variableDeclaration(previous);
+    }
+    if (match(TokenType.IF)) {
+      return ifStatement(previous);
     }
     if (check(TokenType.IDENTIFIER) && checkNext(TokenType.EQUAL)) {
       return assignment();
@@ -61,21 +67,56 @@ public final class StatementSyntaxReader implements StatementSource {
     return new ExpressionStatementSyntax(expression, syntax(semicolon));
   }
 
-  private StatementSyntax variableDeclaration(Token let) {
+  private StatementSyntax variableDeclaration(Token keyword) {
     Token name = consume(TokenType.IDENTIFIER, "Expected variable name");
     Token colon = consume(TokenType.COLON, "Expected ':' after variable name");
     Token type = consume(TokenType.TYPE, "Expected type annotation");
-    Token equals = consume(TokenType.EQUAL, "Expected '=' after type annotation");
-    ExpressionSyntax initializer = expression();
+    Optional<SyntaxToken> equals = Optional.empty();
+    Optional<ExpressionSyntax> initializer = Optional.empty();
+    if (match(TokenType.EQUAL)) {
+      equals = Optional.of(syntax(previous));
+      initializer = Optional.of(expression());
+    }
     Token semicolon = consume(TokenType.SEMICOLON, "Expected ';' after declaration");
     return new VariableDeclarationSyntax(
-        syntax(let),
+        syntax(keyword),
         syntax(name),
         syntax(colon),
         syntax(type),
-        syntax(equals),
+        equals,
         initializer,
         syntax(semicolon));
+  }
+
+  private StatementSyntax ifStatement(Token ifKeyword) {
+    Token leftParen = consume(TokenType.LEFT_PAREN, "Expected '(' after 'if'");
+    ExpressionSyntax condition = expression();
+    Token rightParen = consume(TokenType.RIGHT_PAREN, "Expected ')' after if condition");
+    BlockStatementSyntax thenBlock = block();
+    Optional<SyntaxToken> elseKeyword = Optional.empty();
+    Optional<BlockStatementSyntax> elseBlock = Optional.empty();
+    if (match(TokenType.ELSE)) {
+      elseKeyword = Optional.of(syntax(previous));
+      elseBlock = Optional.of(block());
+    }
+    return new IfStatementSyntax(
+        syntax(ifKeyword),
+        syntax(leftParen),
+        condition,
+        syntax(rightParen),
+        thenBlock,
+        elseKeyword,
+        elseBlock);
+  }
+
+  private BlockStatementSyntax block() {
+    Token leftBrace = consume(TokenType.LEFT_BRACE, "Expected '{' to start block");
+    List<StatementSyntax> statements = new ArrayList<>();
+    while (!check(TokenType.RIGHT_BRACE)) {
+      statements.add(statement());
+    }
+    Token rightBrace = consume(TokenType.RIGHT_BRACE, "Expected '}' to close block");
+    return new BlockStatementSyntax(syntax(leftBrace), statements, syntax(rightBrace));
   }
 
   private StatementSyntax assignment() {
@@ -116,6 +157,9 @@ public final class StatementSyntaxReader implements StatementSource {
     }
     if (match(TokenType.STRING)) {
       return new LiteralExpressionSyntax(syntax(previous), TypeName.STRING);
+    }
+    if (match(TokenType.BOOLEAN)) {
+      return new LiteralExpressionSyntax(syntax(previous), TypeName.BOOLEAN);
     }
     if (match(TokenType.IDENTIFIER)) {
       Token identifier = previous;

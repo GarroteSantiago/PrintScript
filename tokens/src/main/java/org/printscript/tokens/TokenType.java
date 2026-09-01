@@ -15,6 +15,12 @@ public enum TokenType {
   SLASH,
   LEFT_PAREN,
   RIGHT_PAREN,
+  LEFT_BRACE,
+  RIGHT_BRACE,
+  CONST,
+  IF,
+  ELSE,
+  BOOLEAN,
   COMMENT,
   EOF
 }

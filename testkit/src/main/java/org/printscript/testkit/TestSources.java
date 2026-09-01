@@ -1,5 +1,6 @@
 package org.printscript.testkit;
 
+import org.printscript.lexer.KeywordTable;
 import org.printscript.lexer.Lexer;
 import org.printscript.syntax.StatementSource;
 import org.printscript.syntax.StatementSyntaxReader;
@@ -13,7 +14,15 @@ public final class TestSources {
     return new StatementSyntaxReader(new Lexer(source));
   }
 
+  public static StatementSource statementsOf(String source, KeywordTable keywords) {
+    return new StatementSyntaxReader(new Lexer(source, keywords));
+  }
+
   public static ProgramSyntax programOf(String source) {
     return new SyntaxTreeBuilder(statementsOf(source)).buildProgram();
+  }
+
+  public static ProgramSyntax programOf(String source, KeywordTable keywords) {
+    return new SyntaxTreeBuilder(statementsOf(source, keywords)).buildProgram();
   }
 }

@@ -14,10 +14,12 @@ import org.printscript.analyzer.StaticAnalyzer;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
 import org.printscript.diagnostics.Severity;
-import org.printscript.formatter.FormatterConfig;
+import org.printscript.formatter.FormatterConfigProvider;
 import org.printscript.formatter.PrintScriptFormatter;
 import org.printscript.formatter.SpacingRules;
 import org.printscript.interpreter.ArithmeticOperators;
+import org.printscript.interpreter.EnvironmentPort;
+import org.printscript.interpreter.InputPort;
 import org.printscript.interpreter.Interpreter;
 import org.printscript.interpreter.RuntimeEnvironment;
 import org.printscript.interpreter.RuntimeFailure;
@@ -38,13 +40,30 @@ import org.printscript.tokens.SyntaxException;
 public final class PrintScript {
   private static final String READING_STATEMENTS = "Reading statements";
 
-  private final BuiltinRegistry builtins = BuiltinRegistry.v1();
-  private final TypeAnnotationTable typeAnnotations = TypeAnnotationTable.v1();
-  private final BinaryOperatorRules binaryOperatorRules = BinaryOperatorRules.v1();
-  private final KeywordTable keywords = KeywordTable.v1();
-  private final ArithmeticOperators operators = ArithmeticOperators.v1();
-  private final StaticAnalyzer staticAnalyzer = new StaticAnalyzer(NamingStyleRules.v1());
-  private final PrintScriptFormatter formatter = new PrintScriptFormatter(SpacingRules.v1());
+  private record LanguagePipeline(
+      KeywordTable keywords,
+      TypeAnnotationTable typeAnnotations,
+      BinaryOperatorRules binaryOperatorRules,
+      ArithmeticOperators operators,
+      BuiltinRegistry builtins,
+      StaticAnalyzer staticAnalyzer,
+      PrintScriptFormatter formatter) {}
+
+  private LanguagePipeline pipelineFor(LanguageVersion version) {
+    boolean v11 = version.supportsV1_1();
+    return new LanguagePipeline(
+        v11 ? KeywordTable.v1_1() : KeywordTable.v1(),
+        v11 ? TypeAnnotationTable.v1_1() : TypeAnnotationTable.v1(),
+        BinaryOperatorRules.v1(),
+        ArithmeticOperators.v1(),
+        v11 ? BuiltinRegistry.v1_1() : BuiltinRegistry.v1(),
+        new StaticAnalyzer(NamingStyleRules.v1()),
+        new PrintScriptFormatter(v11 ? SpacingRules.v1_1() : SpacingRules.v1()));
+  }
+
+  private boolean supported(LanguageVersion version) {
+    return version.supportsV1() || version.supportsV1_1();
+  }
 
   public CommandResult<ExecutionResult> execute(
       String source, LanguageVersion version, ProgressReporter progress) {
@@ -61,14 +80,38 @@ public final class PrintScript {
 
   public CommandResult<RuntimeEnvironment> execute(
       Reader source, LanguageVersion version, Consumer<String> output, ProgressReporter progress) {
-    if (!version.supportsV1()) return unsupported(version);
+    if (!supported(version)) return unsupported(version);
+    LanguagePipeline pipeline = pipelineFor(version);
+    Interpreter interpreter = new Interpreter(output::accept, pipeline.operators());
+    return execute(source, pipeline, interpreter, progress);
+  }
+
+  public CommandResult<RuntimeEnvironment> execute(
+      Reader source,
+      LanguageVersion version,
+      Consumer<String> output,
+      InputPort input,
+      EnvironmentPort env,
+      ProgressReporter progress) {
+    if (!supported(version)) return unsupported(version);
+    LanguagePipeline pipeline = pipelineFor(version);
+    Interpreter interpreter = new Interpreter(output::accept, pipeline.operators(), input, env);
+    return execute(source, pipeline, interpreter, progress);
+  }
+
+  private CommandResult<RuntimeEnvironment> execute(
+      Reader source,
+      LanguagePipeline pipeline,
+      Interpreter interpreter,
+      ProgressReporter progress) {
     SemanticContext semanticContext =
-        SemanticContext.empty(builtins, typeAnnotations, binaryOperatorRules);
+        SemanticContext.empty(
+            pipeline.builtins(), pipeline.typeAnnotations(), pipeline.binaryOperatorRules());
     RuntimeEnvironment runtimeEnvironment = RuntimeEnvironment.empty();
-    Interpreter interpreter = new Interpreter(output::accept, operators);
     try {
       progress.report(READING_STATEMENTS);
-      StatementSource statements = new StatementSyntaxReader(new Lexer(source, keywords));
+      StatementSource statements =
+          new StatementSyntaxReader(new Lexer(source, pipeline.keywords()));
       while (statements.hasNext()) {
         StatementSyntax statement = statements.next();
         SemanticStatementResult semantic = semanticContext.validate(statement);
@@ -87,12 +130,18 @@ public final class PrintScript {
   }
 
   public CommandResult<String> format(
-      String source, LanguageVersion version, FormatterConfig config, ProgressReporter progress) {
+      String source,
+      LanguageVersion version,
+      FormatterConfigProvider config,
+      ProgressReporter progress) {
     return format(new StringReader(source), version, config, progress);
   }
 
   public CommandResult<String> format(
-      Reader source, LanguageVersion version, FormatterConfig config, ProgressReporter progress) {
+      Reader source,
+      LanguageVersion version,
+      FormatterConfigProvider config,
+      ProgressReporter progress) {
     StringWriter output = new StringWriter();
     CommandResult<Void> result;
     try {
@@ -107,15 +156,17 @@ public final class PrintScript {
   public CommandResult<Void> format(
       Reader source,
       LanguageVersion version,
-      FormatterConfig config,
+      FormatterConfigProvider config,
       Appendable output,
       ProgressReporter progress)
       throws IOException {
-    if (!version.supportsV1()) return unsupported(version);
+    if (!supported(version)) return unsupported(version);
+    LanguagePipeline pipeline = pipelineFor(version);
     try {
       progress.report(READING_STATEMENTS);
-      StatementSource statements = new StatementSyntaxReader(new Lexer(source, keywords));
-      PrintScriptFormatter.Session session = formatter.newSession(config);
+      StatementSource statements =
+          new StatementSyntaxReader(new Lexer(source, pipeline.keywords()));
+      PrintScriptFormatter.Session session = pipeline.formatter().newSession(config);
       while (statements.hasNext()) {
         progress.report("Formatting statement");
         session.format(statements.next(), output);
@@ -147,30 +198,35 @@ public final class PrintScript {
       AnalyzerConfig config,
       Consumer<Diagnostic> diagnosticSink,
       ProgressReporter progress) {
-    if (!version.supportsV1()) return unsupported(version);
+    if (!supported(version)) return unsupported(version);
+    LanguagePipeline pipeline = pipelineFor(version);
     AtomicInteger diagnosticCount = new AtomicInteger();
     AtomicInteger errorCount = new AtomicInteger();
     SemanticContext semanticContext =
-        SemanticContext.empty(builtins, typeAnnotations, binaryOperatorRules);
+        SemanticContext.empty(
+            pipeline.builtins(), pipeline.typeAnnotations(), pipeline.binaryOperatorRules());
     try {
       progress.report(READING_STATEMENTS);
-      StatementSource statements = new StatementSyntaxReader(new Lexer(source, keywords));
+      StatementSource statements =
+          new StatementSyntaxReader(new Lexer(source, pipeline.keywords()));
       while (statements.hasNext()) {
         StatementSyntax statement = statements.next();
         SemanticStatementResult semantic = semanticContext.validate(statement);
         if (!semantic.isSuccess()) return CommandResult.failure(semantic.diagnostics());
         progress.report("Analyzing statement");
-        staticAnalyzer.analyze(
-            statement,
-            semantic.semanticModel(),
-            config,
-            diagnostic -> {
-              diagnosticSink.accept(diagnostic);
-              diagnosticCount.incrementAndGet();
-              if (diagnostic.severity() == Severity.ERROR) {
-                errorCount.incrementAndGet();
-              }
-            });
+        pipeline
+            .staticAnalyzer()
+            .analyze(
+                statement,
+                semantic.semanticModel(),
+                config,
+                diagnostic -> {
+                  diagnosticSink.accept(diagnostic);
+                  diagnosticCount.incrementAndGet();
+                  if (diagnostic.severity() == Severity.ERROR) {
+                    errorCount.incrementAndGet();
+                  }
+                });
         semanticContext = semantic.nextContext();
       }
       return CommandResult.success(new AnalysisResult(diagnosticCount.get(), errorCount.get()));
@@ -186,12 +242,15 @@ public final class PrintScript {
 
   public CommandResult<Void> validate(
       Reader source, LanguageVersion version, ProgressReporter progress) {
-    if (!version.supportsV1()) return unsupported(version);
+    if (!supported(version)) return unsupported(version);
+    LanguagePipeline pipeline = pipelineFor(version);
     SemanticContext semanticContext =
-        SemanticContext.empty(builtins, typeAnnotations, binaryOperatorRules);
+        SemanticContext.empty(
+            pipeline.builtins(), pipeline.typeAnnotations(), pipeline.binaryOperatorRules());
     try {
       progress.report(READING_STATEMENTS);
-      StatementSource statements = new StatementSyntaxReader(new Lexer(source, keywords));
+      StatementSource statements =
+          new StatementSyntaxReader(new Lexer(source, pipeline.keywords()));
       while (statements.hasNext()) {
         SemanticStatementResult semantic = semanticContext.validate(statements.next());
         if (!semantic.isSuccess()) return CommandResult.failure(semantic.diagnostics());

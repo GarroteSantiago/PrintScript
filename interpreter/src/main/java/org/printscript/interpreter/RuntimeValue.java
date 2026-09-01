@@ -4,7 +4,10 @@ import java.math.BigDecimal;
 import org.printscript.syntax.TypeName;
 
 public sealed interface RuntimeValue
-    permits RuntimeValue.NumberValue, RuntimeValue.StringValue, RuntimeValue.UnitValue {
+    permits RuntimeValue.NumberValue,
+        RuntimeValue.StringValue,
+        RuntimeValue.BooleanValue,
+        RuntimeValue.UnitValue {
   TypeName type();
 
   record NumberValue(BigDecimal value) implements RuntimeValue {
@@ -18,6 +21,13 @@ public sealed interface RuntimeValue
     @Override
     public TypeName type() {
       return TypeName.STRING;
+    }
+  }
+
+  record BooleanValue(boolean value) implements RuntimeValue {
+    @Override
+    public TypeName type() {
+      return TypeName.BOOLEAN;
     }
   }
 
