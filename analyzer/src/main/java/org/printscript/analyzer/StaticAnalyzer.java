@@ -3,7 +3,6 @@ package org.printscript.analyzer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
 import org.printscript.semantics.SemanticModel;
@@ -17,8 +16,15 @@ import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 
 public final class StaticAnalyzer {
-    private static final Pattern SNAKE_CASE = Pattern.compile("[a-z][a-z0-9]*(?:_[a-z0-9]+)*");
-    private static final Pattern CAMEL_CASE = Pattern.compile("[a-z][a-zA-Z0-9]*");
+    private final NamingStyleRules namingStyleRules;
+
+    public StaticAnalyzer() {
+        this(NamingStyleRules.v1());
+    }
+
+    public StaticAnalyzer(NamingStyleRules namingStyleRules) {
+        this.namingStyleRules = namingStyleRules;
+    }
 
     public List<Diagnostic> analyze(ProgramSyntax program, SemanticModel semanticModel, AnalyzerConfig config) {
         List<Diagnostic> diagnostics = new ArrayList<>();
@@ -66,10 +72,7 @@ public final class StaticAnalyzer {
             org.printscript.source.SourceSpan span,
             AnalyzerConfig config,
             Consumer<Diagnostic> diagnostics) {
-        boolean valid = switch (config.namingStyle()) {
-            case SNAKE_CASE -> SNAKE_CASE.matcher(name).matches();
-            case CAMEL_CASE -> CAMEL_CASE.matcher(name).matches();
-        };
+        boolean valid = namingStyleRules.matches(config.namingStyle(), name);
         if (!valid) {
             diagnostics.accept(error("Identifier '" + name + "' does not match " + config.namingStyle(), span));
         }

@@ -29,6 +29,13 @@ wire it into a `syntax.StatementSyntaxReader`. Every core module in between depe
 `tokens.TokenSource`/`syntax.StatementSource` ports, never on each other's concrete
 implementation — `application` is where those ports get bound to real implementations.
 
+`PrintScript` is also where every version-specific strategy object gets selected: `KeywordTable`,
+`TypeAnnotationTable`, `BinaryOperatorRules`, `ArithmeticOperators`, `NamingStyleRules`,
+`SpacingRules` are all constructed here (currently all `.v1()`) and injected into `Lexer`,
+`SemanticContext`, `Interpreter`, `StaticAnalyzer`, and `PrintScriptFormatter` respectively. None of
+those classes decide their own version-specific behavior — they only receive it. Swapping in a new
+version's behavior for any of them means changing exactly one line here, not the consuming class.
+
 Versioning should affect construction of the language pipeline.
 
 ```text

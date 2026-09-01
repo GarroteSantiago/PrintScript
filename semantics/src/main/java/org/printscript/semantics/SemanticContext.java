@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
+import org.printscript.syntax.TypeAnnotationTable;
 import org.printscript.syntax.TypeName;
 import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
@@ -14,26 +15,44 @@ import org.printscript.syntax.nodes.statements.AssignmentSyntax;
 import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
-import org.printscript.tokens.TokenType;
 
 public final class SemanticContext {
     private final BuiltinRegistry builtins;
+    private final TypeAnnotationTable typeAnnotations;
+    private final BinaryOperatorRules binaryOperatorRules;
     private final Map<String, VariableSymbol> symbols;
 
-    private SemanticContext(BuiltinRegistry builtins, Map<String, VariableSymbol> symbols) {
+    private SemanticContext(
+            BuiltinRegistry builtins,
+            TypeAnnotationTable typeAnnotations,
+            BinaryOperatorRules binaryOperatorRules,
+            Map<String, VariableSymbol> symbols) {
         this.builtins = builtins;
+        this.typeAnnotations = typeAnnotations;
+        this.binaryOperatorRules = binaryOperatorRules;
         this.symbols = Map.copyOf(symbols);
     }
 
     public static SemanticContext empty(BuiltinRegistry builtins) {
-        return new SemanticContext(builtins, Map.of());
+        return empty(builtins, TypeAnnotationTable.v1());
+    }
+
+    public static SemanticContext empty(BuiltinRegistry builtins, TypeAnnotationTable typeAnnotations) {
+        return empty(builtins, typeAnnotations, BinaryOperatorRules.v1());
+    }
+
+    public static SemanticContext empty(
+            BuiltinRegistry builtins, TypeAnnotationTable typeAnnotations, BinaryOperatorRules binaryOperatorRules) {
+        return new SemanticContext(builtins, typeAnnotations, binaryOperatorRules, Map.of());
     }
 
     public SemanticStatementResult validate(StatementSyntax statement) {
         SemanticModel.Builder model = SemanticModel.builder();
         Map<String, VariableSymbol> nextSymbols = new HashMap<>(symbols);
         validateStatement(statement, nextSymbols, model);
-        SemanticContext next = model.hasErrors() ? this : new SemanticContext(builtins, nextSymbols);
+        SemanticContext next = model.hasErrors()
+                ? this
+                : new SemanticContext(builtins, typeAnnotations, binaryOperatorRules, nextSymbols);
         SemanticModel semanticModel = model.build();
         return new SemanticStatementResult(next, semanticModel, semanticModel.diagnostics());
     }
@@ -43,7 +62,7 @@ public final class SemanticContext {
         switch (statement) {
             case VariableDeclarationSyntax declaration -> {
                 String name = declaration.identifier().semanticLexeme();
-                TypeName declaredType = TypeName.fromLexeme(declaration.type().semanticLexeme());
+                TypeName declaredType = typeAnnotations.resolve(declaration.type().semanticLexeme());
                 if (nextSymbols.containsKey(name)) {
                     model.addDiagnostic(error("Variable '" + name + "' is already declared", declaration.span()));
                     return;
@@ -108,15 +127,11 @@ public final class SemanticContext {
         TypeName right = typeOf(binary.right(), symbols, model);
         if (right == null)
             return null;
-        if (binary.operator().type() == TokenType.PLUS && (left == TypeName.STRING || right == TypeName.STRING)) {
-            return TypeName.STRING;
-        }
-        if (left == TypeName.NUMBER && right == TypeName.NUMBER) {
-            return TypeName.NUMBER;
-        }
-        model.addDiagnostic(error("Operator '" + binary.operator().text() + "' cannot be applied to "
-                + printable(left) + " and " + printable(right), binary.span()));
-        return null;
+        return binaryOperatorRules.resultType(binary.operator().type(), left, right).orElseGet(() -> {
+            model.addDiagnostic(error("Operator '" + binary.operator().text() + "' cannot be applied to "
+                    + printable(left) + " and " + printable(right), binary.span()));
+            return null;
+        });
     }
 
     private TypeName callType(

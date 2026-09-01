@@ -21,3 +21,19 @@ Built-ins should be handled through a small registry from the start. The registr
 For version `1.0.0`, the registry only needs `println`, but the model should support more built-ins and future user-defined functions.
 
 Variable declarations require explicit type annotations.
+
+## Swappable per-version behavior
+
+Version-specific literal behavior lives behind small strategy interfaces (default `v1()`
+implementation, constructor-injected into `SemanticContext`/`SemanticModelBuilder`, selected by the
+composition root in `application`) rather than hardcoded `switch`/`if` chains:
+
+- `TypeAnnotationTable` — resolves a type-annotation lexeme (e.g. `"number"`, `"string"`) to a
+  `TypeName`.
+- `BinaryOperatorRules` — the single source of truth for what result type (if any) a binary
+  operator produces given two operand types. This is also what
+  [`interpreter.Interpreter`](../interpreter/ARCHITECTURE.md) relies on indirectly: the interpreter
+  does not re-derive "is `+` string concatenation or numeric addition" from runtime values, it reads
+  the type this rule already assigned during validation (`SemanticModel.typeOf`). Keep that rule
+  here, not duplicated at the interpreter level — the interpreter should only ever *act on* a type
+  decision, never *make* one.

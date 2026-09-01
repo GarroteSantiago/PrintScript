@@ -9,16 +9,21 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.printscript.analyzer.AnalyzerConfig;
+import org.printscript.analyzer.NamingStyleRules;
 import org.printscript.analyzer.StaticAnalyzer;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
 import org.printscript.diagnostics.Severity;
 import org.printscript.formatter.FormatterConfig;
 import org.printscript.formatter.PrintScriptFormatter;
+import org.printscript.formatter.SpacingRules;
+import org.printscript.interpreter.ArithmeticOperators;
 import org.printscript.interpreter.Interpreter;
 import org.printscript.interpreter.RuntimeEnvironment;
 import org.printscript.interpreter.RuntimeFailure;
+import org.printscript.lexer.KeywordTable;
 import org.printscript.lexer.Lexer;
+import org.printscript.semantics.BinaryOperatorRules;
 import org.printscript.semantics.BuiltinRegistry;
 import org.printscript.semantics.SemanticContext;
 import org.printscript.semantics.SemanticStatementResult;
@@ -26,13 +31,18 @@ import org.printscript.source.SourcePosition;
 import org.printscript.source.SourceSpan;
 import org.printscript.syntax.StatementSource;
 import org.printscript.syntax.StatementSyntaxReader;
+import org.printscript.syntax.TypeAnnotationTable;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.tokens.SyntaxException;
 
 public final class PrintScript {
     private final BuiltinRegistry builtins = BuiltinRegistry.v1();
-    private final StaticAnalyzer staticAnalyzer = new StaticAnalyzer();
-    private final PrintScriptFormatter formatter = new PrintScriptFormatter();
+    private final TypeAnnotationTable typeAnnotations = TypeAnnotationTable.v1();
+    private final BinaryOperatorRules binaryOperatorRules = BinaryOperatorRules.v1();
+    private final KeywordTable keywords = KeywordTable.v1();
+    private final ArithmeticOperators operators = ArithmeticOperators.v1();
+    private final StaticAnalyzer staticAnalyzer = new StaticAnalyzer(NamingStyleRules.v1());
+    private final PrintScriptFormatter formatter = new PrintScriptFormatter(SpacingRules.v1());
 
     public CommandResult<ExecutionResult> execute(String source, LanguageVersion version, ProgressReporter progress) {
         return execute(new StringReader(source), version, progress);
@@ -50,12 +60,12 @@ public final class PrintScript {
             Reader source, LanguageVersion version, Consumer<String> output, ProgressReporter progress) {
         if (!version.supportsV1())
             return unsupported(version);
-        SemanticContext semanticContext = SemanticContext.empty(builtins);
+        SemanticContext semanticContext = SemanticContext.empty(builtins, typeAnnotations, binaryOperatorRules);
         RuntimeEnvironment runtimeEnvironment = RuntimeEnvironment.empty();
-        Interpreter interpreter = new Interpreter(output::accept);
+        Interpreter interpreter = new Interpreter(output::accept, operators);
         try {
             progress.report("Reading statements");
-            StatementSource statements = new StatementSyntaxReader(new Lexer(source));
+            StatementSource statements = new StatementSyntaxReader(new Lexer(source, keywords));
             while (statements.hasNext()) {
                 StatementSyntax statement = statements.next();
                 SemanticStatementResult semantic = semanticContext.validate(statement);
@@ -101,7 +111,7 @@ public final class PrintScript {
             return unsupported(version);
         try {
             progress.report("Reading statements");
-            StatementSource statements = new StatementSyntaxReader(new Lexer(source));
+            StatementSource statements = new StatementSyntaxReader(new Lexer(source, keywords));
             PrintScriptFormatter.Session session = formatter.newSession(config);
             while (statements.hasNext()) {
                 progress.report("Formatting statement");
@@ -136,10 +146,10 @@ public final class PrintScript {
             return unsupported(version);
         AtomicInteger diagnosticCount = new AtomicInteger();
         AtomicInteger errorCount = new AtomicInteger();
-        SemanticContext semanticContext = SemanticContext.empty(builtins);
+        SemanticContext semanticContext = SemanticContext.empty(builtins, typeAnnotations, binaryOperatorRules);
         try {
             progress.report("Reading statements");
-            StatementSource statements = new StatementSyntaxReader(new Lexer(source));
+            StatementSource statements = new StatementSyntaxReader(new Lexer(source, keywords));
             while (statements.hasNext()) {
                 StatementSyntax statement = statements.next();
                 SemanticStatementResult semantic = semanticContext.validate(statement);
@@ -168,10 +178,10 @@ public final class PrintScript {
     public CommandResult<Void> validate(Reader source, LanguageVersion version, ProgressReporter progress) {
         if (!version.supportsV1())
             return unsupported(version);
-        SemanticContext semanticContext = SemanticContext.empty(builtins);
+        SemanticContext semanticContext = SemanticContext.empty(builtins, typeAnnotations, binaryOperatorRules);
         try {
             progress.report("Reading statements");
-            StatementSource statements = new StatementSyntaxReader(new Lexer(source));
+            StatementSource statements = new StatementSyntaxReader(new Lexer(source, keywords));
             while (statements.hasNext()) {
                 SemanticStatementResult semantic = semanticContext.validate(statements.next());
                 if (!semantic.isSuccess())

@@ -11,6 +11,9 @@ Responsibilities:
 - `StatementSource` — the pull-based port a statement producer (`StatementSyntaxReader`)
   implements and a statement consumer (the composition root in
   [application](../application/ARCHITECTURE.md)) depends on
+- `TypeAnnotationTable` — resolves a type-annotation lexeme to a `TypeName`; a swappable strategy
+  (default `v1()`) consumed by [semantics](../semantics/ARCHITECTURE.md), not by anything in this
+  module
 - concrete/lossless syntax representation when needed by formatting
 - statement and expression dispatch protocols
 

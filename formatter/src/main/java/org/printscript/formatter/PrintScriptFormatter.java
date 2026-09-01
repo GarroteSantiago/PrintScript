@@ -18,6 +18,16 @@ import org.printscript.tokens.SyntaxToken;
 import org.printscript.tokens.TokenType;
 
 public final class PrintScriptFormatter {
+    private final SpacingRules spacingRules;
+
+    public PrintScriptFormatter() {
+        this(SpacingRules.v1());
+    }
+
+    public PrintScriptFormatter(SpacingRules spacingRules) {
+        this.spacingRules = spacingRules;
+    }
+
     public Session newSession(FormatterConfig config) {
         return new Session(config);
     }
@@ -131,20 +141,7 @@ public final class PrintScriptFormatter {
         if (startsPrintln(token) && previous.type() == TokenType.SEMICOLON) {
             return "\n".repeat(config.blankLinesBeforePrintln() + 1);
         }
-        return switch (token.type()) {
-            case SEMICOLON -> " ".repeat(config.spacesBeforeSemicolon());
-            case EQUAL -> " ".repeat(config.spacesAroundAssignment());
-            case PLUS, MINUS, STAR, SLASH -> " ".repeat(config.spacesAroundOperators());
-            case COLON, RIGHT_PAREN, LEFT_PAREN -> "";
-            default -> switch (previous.type()) {
-                case SEMICOLON -> "\n" + " ".repeat(config.spacesAfterSemicolon());
-                case EQUAL -> " ".repeat(config.spacesAroundAssignment());
-                case PLUS, MINUS, STAR, SLASH -> " ".repeat(config.spacesAroundOperators());
-                case COLON -> " ";
-                case LEFT_PAREN -> "";
-                default -> hasLineBreak(token.leadingTrivia()) ? token.leadingTrivia() : " ";
-            };
-        };
+        return spacingRules.leadingTriviaFor(token, previous, config);
     }
 
     private String rewriteTrailingTrivia(SyntaxToken previous, SyntaxToken eof, FormatterConfig config) {

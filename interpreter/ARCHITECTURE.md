@@ -31,3 +31,23 @@ Numbers should use decimal semantics to avoid floating-point surprises.
 Callable statements should return values. When no meaningful value exists, the result should be equivalent to Kotlin's `Unit`.
 
 `println` returns the unit value after writing to the output port.
+
+## Swappable per-version behavior
+
+Version-specific literal behavior is abstracted behind small strategy interfaces rather than
+hardcoded in `switch` statements, so a future language version can swap them in without touching
+this module's dispatch logic:
+
+- `ArithmeticOperators` — what a binary operator (`PLUS`/`MINUS`/`STAR`/`SLASH`) computes given two
+  `BigDecimal` operands. `Interpreter` takes one via constructor injection (default `v1()`); the
+  composition root in `application` is where a real swap would happen.
+
+`Interpreter.evaluateBinary` does **not** independently decide whether `+` means numeric addition
+or string concatenation by inspecting runtime values. That decision was already made once, during
+semantic validation, and recorded in the `SemanticModel` passed in — the interpreter just reads
+`semanticModel.typeOf(binary)`. This is deliberate: the type-compatibility rule (`+` also valid for
+strings, all four operators valid for numbers) lives in exactly one place —
+`semantics.BinaryOperatorRules` — instead of being re-implemented here as a duplicate runtime
+`instanceof` check. If you're tempted to add a runtime type check to decide operator behavior here,
+that logic almost certainly belongs in `BinaryOperatorRules` instead, consulted once during
+validation.

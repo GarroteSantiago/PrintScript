@@ -20,3 +20,11 @@ Design rules:
   unterminated literal rather than trying to resynchronize.
 - Comments and whitespace are trivia, not syntactic sugar; keep them attached to tokens so the
   formatter and any future comment-preserving tooling can recover them losslessly.
+
+## Swappable per-version behavior
+
+The keyword table (which lexemes are `let`/`number`/`string` vs. plain identifiers) is not
+hardcoded in `Lexer`'s scanning logic. It lives behind `KeywordTable`, constructor-injected into
+`Lexer` (default `v1()`), selected by the composition root in
+[application](../application/ARCHITECTURE.md). A future version adding keywords only needs a new
+`KeywordTable`, not a change to `Lexer` itself.

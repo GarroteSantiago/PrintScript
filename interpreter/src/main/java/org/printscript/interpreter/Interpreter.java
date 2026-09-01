@@ -1,7 +1,6 @@
 package org.printscript.interpreter;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
 import org.printscript.semantics.SemanticModel;
@@ -16,13 +15,18 @@ import org.printscript.syntax.nodes.statements.AssignmentSyntax;
 import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
-import org.printscript.tokens.TokenType;
 
 public final class Interpreter {
     private final OutputPort output;
+    private final ArithmeticOperators operators;
 
     public Interpreter(OutputPort output) {
+        this(output, ArithmeticOperators.v1());
+    }
+
+    public Interpreter(OutputPort output, ArithmeticOperators operators) {
         this.output = output;
+        this.operators = operators;
     }
 
     public RuntimeEnvironment execute(ProgramSyntax program, SemanticModel semanticModel) {
@@ -73,24 +77,17 @@ public final class Interpreter {
             BinaryExpressionSyntax binary, RuntimeEnvironment environment, SemanticModel semanticModel) {
         RuntimeValue left = evaluate(binary.left(), environment, semanticModel);
         RuntimeValue right = evaluate(binary.right(), environment, semanticModel);
-        if (binary.operator().type() == TokenType.PLUS
-                && (left instanceof RuntimeValue.StringValue || right instanceof RuntimeValue.StringValue)) {
+        if (semanticModel.typeOf(binary).orElse(null) == TypeName.STRING) {
             return new RuntimeValue.StringValue(stringify(left) + stringify(right));
         }
         BigDecimal leftNumber = ((RuntimeValue.NumberValue) left).value();
         BigDecimal rightNumber = ((RuntimeValue.NumberValue) right).value();
-        BigDecimal result = switch (binary.operator().type()) {
-            case PLUS -> leftNumber.add(rightNumber);
-            case MINUS -> leftNumber.subtract(rightNumber);
-            case STAR -> leftNumber.multiply(rightNumber);
-            case SLASH -> {
-                if (rightNumber.compareTo(BigDecimal.ZERO) == 0) {
-                    throw runtime("Division by zero", binary);
-                }
-                yield leftNumber.divide(rightNumber, MathContext.DECIMAL128).stripTrailingZeros();
-            }
-            default -> throw new IllegalStateException("Unsupported binary operator: " + binary.operator().type());
-        };
+        BigDecimal result;
+        try {
+            result = operators.apply(binary.operator().type(), leftNumber, rightNumber);
+        } catch (ArithmeticException exception) {
+            throw runtime(exception.getMessage(), binary);
+        }
         return new RuntimeValue.NumberValue(result);
     }
 

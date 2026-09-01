@@ -14,6 +14,7 @@ import org.printscript.tokens.TokenType;
 
 public final class Lexer implements TokenSource {
     private final Reader reader;
+    private final KeywordTable keywords;
     private int currentChar;
     private boolean eofTokenEmitted;
     private int row = 1;
@@ -22,11 +23,20 @@ public final class Lexer implements TokenSource {
     private SourcePosition lastConsumed = new SourcePosition(1, 1, 0);
 
     public Lexer(String source) {
-        this(new StringReader(source));
+        this(new StringReader(source), KeywordTable.v1());
     }
 
     public Lexer(Reader reader) {
+        this(reader, KeywordTable.v1());
+    }
+
+    public Lexer(String source, KeywordTable keywords) {
+        this(new StringReader(source), keywords);
+    }
+
+    public Lexer(Reader reader, KeywordTable keywords) {
         this.reader = reader;
+        this.keywords = keywords;
         this.currentChar = readRaw();
     }
 
@@ -121,11 +131,7 @@ public final class Lexer implements TokenSource {
             text.append(advance());
         }
         String lexeme = text.toString();
-        TokenType type = switch (lexeme) {
-            case "let" -> TokenType.LET;
-            case "number", "string" -> TokenType.TYPE;
-            default -> TokenType.IDENTIFIER;
-        };
+        TokenType type = keywords.classify(lexeme);
         return token(type, lexeme, lexeme, leadingTrivia, start);
     }
 
