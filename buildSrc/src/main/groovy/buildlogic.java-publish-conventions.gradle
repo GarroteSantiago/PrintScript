@@ -1,0 +1,28 @@
+/*
+ * Publishes this module's jar to GitHub Packages (Maven registry backed by this repo)
+ * so other repos can add it as a Gradle/Maven dependency. Applied only to modules meant
+ * for external consumption -- not `cli` (an application, not a library) or `testkit`
+ * (test-fixture helper, testImplementation only).
+ */
+
+plugins {
+    id 'maven-publish'
+}
+
+publishing {
+    publications {
+        library(MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            name = 'GitHubPackages'
+            url = uri('https://maven.pkg.github.com/GarroteSantiago/PrintScript')
+            credentials {
+                username = System.getenv('GITHUB_ACTOR')
+                password = System.getenv('GITHUB_TOKEN')
+            }
+        }
+    }
+}
