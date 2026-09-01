@@ -12,6 +12,8 @@ target/
 !.envrc
 !.files/
 !.files/**
+!.github/
+!.github/**
 
 # Ignore Gradle project-specific cache directory
 .gradle
