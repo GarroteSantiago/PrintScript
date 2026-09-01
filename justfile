@@ -49,6 +49,10 @@ coverage:
 
 # --- CONTINUOUS INTEGRATION / VERIFICATION ---
 
+# Run every CI quality tool (formatting, style, static analysis, tests) without a clean rebuild
+validate:
+    ./gradlew spotlessCheck checkstyleMain checkstyleTest pmdMain pmdTest test jacocoTestReport
+
 # Run EVERYTHING (Compiles, tests, verifies style, and checks quality rules)
 # Run this command right before pushing your code to the faculty repository!
 check:
