@@ -1,7 +1,7 @@
 package org.printscript.semantics;
 
 import java.util.List;
-import org.printscript.common.Diagnostic;
+import org.printscript.diagnostics.Diagnostic;
 
 public record SemanticStatementResult(
         SemanticContext nextContext,

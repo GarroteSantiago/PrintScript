@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.printscript.syntax.TokenType;
 import org.printscript.syntax.nodes.ProgramSyntax;
 import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
@@ -15,7 +14,8 @@ import org.printscript.syntax.nodes.statements.AssignmentSyntax;
 import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
-import org.printscript.syntax.tokens.SyntaxToken;
+import org.printscript.tokens.SyntaxToken;
+import org.printscript.tokens.TokenType;
 
 public final class PrintScriptFormatter {
     public Session newSession(FormatterConfig config) {

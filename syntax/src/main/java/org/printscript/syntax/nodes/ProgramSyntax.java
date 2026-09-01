@@ -1,9 +1,9 @@
 package org.printscript.syntax.nodes;
 
 import java.util.List;
-import org.printscript.common.SourceSpan;
+import org.printscript.source.SourceSpan;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
-import org.printscript.syntax.tokens.SyntaxToken;
+import org.printscript.tokens.SyntaxToken;
 
 public record ProgramSyntax(List<StatementSyntax> statements, SyntaxToken eof) implements SyntaxNode {
     public ProgramSyntax {

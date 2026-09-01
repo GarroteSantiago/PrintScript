@@ -3,7 +3,6 @@ plugins {
 }
 
 dependencies {
-    api project(':common')
     api project(':syntax')
     api project(':semantics')
 }

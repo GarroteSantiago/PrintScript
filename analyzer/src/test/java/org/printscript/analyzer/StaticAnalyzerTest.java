@@ -5,15 +5,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.printscript.common.Diagnostic;
+import org.printscript.diagnostics.Diagnostic;
 import org.printscript.semantics.BuiltinRegistry;
 import org.printscript.semantics.SemanticContext;
-import org.printscript.syntax.StatementSyntaxReader;
+import org.printscript.testkit.TestSources;
 
 class StaticAnalyzerTest {
     @Test
     void reportsConfiguredStyleAndPrintlnPolicyViolations() {
-        var statements = new StatementSyntaxReader("""
+        var statements = TestSources.statementsOf("""
                 let badName: string = "hello";
                 println("hello " + badName);
                 """);

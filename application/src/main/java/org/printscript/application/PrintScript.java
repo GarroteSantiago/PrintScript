@@ -10,22 +10,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.printscript.analyzer.AnalyzerConfig;
 import org.printscript.analyzer.StaticAnalyzer;
-import org.printscript.common.CommandResult;
-import org.printscript.common.Diagnostic;
-import org.printscript.common.LanguageVersion;
-import org.printscript.common.Phase;
-import org.printscript.common.ProgressReporter;
+import org.printscript.diagnostics.Diagnostic;
+import org.printscript.diagnostics.Phase;
+import org.printscript.diagnostics.Severity;
 import org.printscript.formatter.FormatterConfig;
 import org.printscript.formatter.PrintScriptFormatter;
 import org.printscript.interpreter.Interpreter;
 import org.printscript.interpreter.RuntimeEnvironment;
 import org.printscript.interpreter.RuntimeFailure;
+import org.printscript.lexer.Lexer;
 import org.printscript.semantics.BuiltinRegistry;
 import org.printscript.semantics.SemanticContext;
 import org.printscript.semantics.SemanticStatementResult;
+import org.printscript.source.SourcePosition;
+import org.printscript.source.SourceSpan;
+import org.printscript.syntax.StatementSource;
 import org.printscript.syntax.StatementSyntaxReader;
-import org.printscript.syntax.SyntaxException;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
+import org.printscript.tokens.SyntaxException;
 
 public final class PrintScript {
     private final BuiltinRegistry builtins = BuiltinRegistry.v1();
@@ -53,7 +55,7 @@ public final class PrintScript {
         Interpreter interpreter = new Interpreter(output::accept);
         try {
             progress.report("Reading statements");
-            StatementSyntaxReader statements = new StatementSyntaxReader(source);
+            StatementSource statements = new StatementSyntaxReader(new Lexer(source));
             while (statements.hasNext()) {
                 StatementSyntax statement = statements.next();
                 SemanticStatementResult semantic = semanticContext.validate(statement);
@@ -99,7 +101,7 @@ public final class PrintScript {
             return unsupported(version);
         try {
             progress.report("Reading statements");
-            StatementSyntaxReader statements = new StatementSyntaxReader(source);
+            StatementSource statements = new StatementSyntaxReader(new Lexer(source));
             PrintScriptFormatter.Session session = formatter.newSession(config);
             while (statements.hasNext()) {
                 progress.report("Formatting statement");
@@ -137,7 +139,7 @@ public final class PrintScript {
         SemanticContext semanticContext = SemanticContext.empty(builtins);
         try {
             progress.report("Reading statements");
-            StatementSyntaxReader statements = new StatementSyntaxReader(source);
+            StatementSource statements = new StatementSyntaxReader(new Lexer(source));
             while (statements.hasNext()) {
                 StatementSyntax statement = statements.next();
                 SemanticStatementResult semantic = semanticContext.validate(statement);
@@ -147,7 +149,7 @@ public final class PrintScript {
                 staticAnalyzer.analyze(statement, semantic.semanticModel(), config, diagnostic -> {
                     diagnosticSink.accept(diagnostic);
                     diagnosticCount.incrementAndGet();
-                    if (diagnostic.severity() == org.printscript.common.Severity.ERROR) {
+                    if (diagnostic.severity() == Severity.ERROR) {
                         errorCount.incrementAndGet();
                     }
                 });
@@ -169,7 +171,7 @@ public final class PrintScript {
         SemanticContext semanticContext = SemanticContext.empty(builtins);
         try {
             progress.report("Reading statements");
-            StatementSyntaxReader statements = new StatementSyntaxReader(source);
+            StatementSource statements = new StatementSyntaxReader(new Lexer(source));
             while (statements.hasNext()) {
                 SemanticStatementResult semantic = semanticContext.validate(statements.next());
                 if (!semantic.isSuccess())
@@ -186,9 +188,7 @@ public final class PrintScript {
         Diagnostic diagnostic = Diagnostic.error(
                 Phase.APPLICATION,
                 "Unsupported PrintScript version: " + version.major() + "." + version.minor() + "." + version.patch(),
-                new org.printscript.common.SourceSpan(
-                        new org.printscript.common.SourcePosition(1, 1, 0),
-                        new org.printscript.common.SourcePosition(1, 1, 0)));
+                new SourceSpan(new SourcePosition(1, 1, 0), new SourcePosition(1, 1, 0)));
         return CommandResult.failure(List.of(diagnostic));
     }
 }

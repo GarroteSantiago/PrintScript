@@ -4,8 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.StringWriter;
 import org.junit.jupiter.api.Test;
-import org.printscript.syntax.StatementSyntaxReader;
-import org.printscript.syntax.SyntaxTreeBuilder;
+import org.printscript.testkit.TestSources;
 
 class PrintScriptFormatterTest {
     @Test
@@ -13,7 +12,7 @@ class PrintScriptFormatterTest {
         String source = "let   a:string='value'; # keep\nprintln(a);";
 
         String formatted =
-                new PrintScriptFormatter().format(new SyntaxTreeBuilder(source).buildProgram(), FormatterConfig.defaults());
+                new PrintScriptFormatter().format(TestSources.programOf(source), FormatterConfig.defaults());
 
         assertEquals("let a: string = 'value';# keep\nprintln(a);\n", formatted);
     }
@@ -23,14 +22,14 @@ class PrintScriptFormatterTest {
         String source = "let text: string = \"hello\";\nprintln(text);";
 
         String formatted = new PrintScriptFormatter()
-                .format(new SyntaxTreeBuilder(source).buildProgram(), new FormatterConfig(0, 0, 1, 1, 1));
+                .format(TestSources.programOf(source), new FormatterConfig(0, 0, 1, 1, 1));
 
         assertEquals("let text: string = \"hello\";\n\nprintln(text);\n", formatted);
     }
 
     @Test
     void writesFormattedStatementsToAppendable() throws Exception {
-        var statements = new StatementSyntaxReader("let text:string=\"hello\";\nprintln(text);");
+        var statements = TestSources.statementsOf("let text:string=\"hello\";\nprintln(text);");
         var session = new PrintScriptFormatter().newSession(new FormatterConfig(0, 0, 1, 1, 1));
         var output = new StringWriter();
 

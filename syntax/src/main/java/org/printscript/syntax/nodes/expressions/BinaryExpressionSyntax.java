@@ -1,7 +1,7 @@
 package org.printscript.syntax.nodes.expressions;
 
-import org.printscript.common.SourceSpan;
-import org.printscript.syntax.tokens.SyntaxToken;
+import org.printscript.source.SourceSpan;
+import org.printscript.tokens.SyntaxToken;
 
 public record BinaryExpressionSyntax(ExpressionSyntax left, SyntaxToken operator, ExpressionSyntax right)
         implements ExpressionSyntax {

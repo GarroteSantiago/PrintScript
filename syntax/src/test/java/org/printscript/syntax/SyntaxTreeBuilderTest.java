@@ -15,7 +15,8 @@ import org.printscript.syntax.nodes.statements.AssignmentSyntax;
 import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
-import org.printscript.syntax.tokens.SyntaxToken;
+import org.printscript.testkit.TestSources;
+import org.printscript.tokens.SyntaxToken;
 
 class SyntaxTreeBuilderTest {
     @Test
@@ -28,7 +29,7 @@ class SyntaxTreeBuilderTest {
                 """;
 
         StringBuilder rebuilt = new StringBuilder();
-        for (SyntaxToken token : flatten(new SyntaxTreeBuilder(source).buildProgram())) {
+        for (SyntaxToken token : flatten(TestSources.programOf(source))) {
             rebuilt.append(token.leadingTrivia()).append(token.text());
         }
 

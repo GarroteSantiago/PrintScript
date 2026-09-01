@@ -3,12 +3,12 @@ package org.printscript.semantics;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
-import org.printscript.syntax.SyntaxTreeBuilder;
+import org.printscript.testkit.TestSources;
 
 class SemanticModelBuilderTest {
     @Test
     void rejectsAssigningStringToNumberVariable() {
-        var program = new SyntaxTreeBuilder("let total: number = \"no\";").buildProgram();
+        var program = TestSources.programOf("let total: number = \"no\";");
 
         var semanticModel = new SemanticModelBuilder(BuiltinRegistry.v1()).build(program);
 

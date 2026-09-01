@@ -1,11 +1,9 @@
 package org.printscript.syntax;
 
-import java.io.Reader;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
-import org.printscript.common.Diagnostic;
-import org.printscript.common.Phase;
+import org.printscript.diagnostics.Diagnostic;
+import org.printscript.diagnostics.Phase;
 import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
@@ -15,30 +13,30 @@ import org.printscript.syntax.nodes.statements.AssignmentSyntax;
 import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
-import org.printscript.syntax.tokens.SyntaxToken;
-import org.printscript.syntax.tokens.Token;
-import org.printscript.syntax.lexer.Lexer;
+import org.printscript.tokens.SyntaxException;
+import org.printscript.tokens.SyntaxToken;
+import org.printscript.tokens.Token;
+import org.printscript.tokens.TokenSource;
+import org.printscript.tokens.TokenType;
 
-public final class StatementSyntaxReader {
-    private final Lexer lexer;
+public final class StatementSyntaxReader implements StatementSource {
+    private final TokenSource tokenSource;
     private Token current;
     private Token next;
     private Token previous;
 
-    public StatementSyntaxReader(String source) {
-        this(new StringReader(source));
+    public StatementSyntaxReader(TokenSource tokenSource) {
+        this.tokenSource = tokenSource;
+        this.current = tokenSource.next();
+        this.next = tokenSource.next();
     }
 
-    public StatementSyntaxReader(Reader reader) {
-        this.lexer = new Lexer(reader);
-        this.current = lexer.next();
-        this.next = lexer.next();
-    }
-
+    @Override
     public boolean hasNext() {
         return !check(TokenType.EOF);
     }
 
+    @Override
     public StatementSyntax next() {
         if (!hasNext()) {
             throw error(current, "Expected statement");
@@ -46,6 +44,7 @@ public final class StatementSyntaxReader {
         return statement();
     }
 
+    @Override
     public SyntaxToken eof() {
         return syntax(current);
     }
@@ -155,7 +154,7 @@ public final class StatementSyntaxReader {
     private Token advance() {
         previous = current;
         current = next;
-        next = lexer.next();
+        next = tokenSource.next();
         return previous;
     }
 

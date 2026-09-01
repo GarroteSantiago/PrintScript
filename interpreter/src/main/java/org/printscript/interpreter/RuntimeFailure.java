@@ -1,6 +1,6 @@
 package org.printscript.interpreter;
 
-import org.printscript.common.Diagnostic;
+import org.printscript.diagnostics.Diagnostic;
 
 public final class RuntimeFailure extends RuntimeException {
     private final Diagnostic diagnostic;

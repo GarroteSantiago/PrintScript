@@ -4,7 +4,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.printscript.common.Diagnostic;
+import org.printscript.diagnostics.Diagnostic;
 import org.printscript.syntax.TypeName;
 import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.ExpressionSyntax;

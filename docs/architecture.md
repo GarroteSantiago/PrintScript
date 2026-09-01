@@ -6,7 +6,10 @@ PrintScript should be built as a small language core surrounded by replaceable i
 
 ## Architecture Notes
 
-- [Common Module](../common/ARCHITECTURE.md)
+- [Source Module](../source/ARCHITECTURE.md)
+- [Diagnostics Module](../diagnostics/ARCHITECTURE.md)
+- [Tokens Module](../tokens/ARCHITECTURE.md)
+- [Lexer Module](../lexer/ARCHITECTURE.md)
 - [Syntax Module](../syntax/ARCHITECTURE.md)
 - [Semantics Module](../semantics/ARCHITECTURE.md)
 - [Interpreter Module](../interpreter/ARCHITECTURE.md)
@@ -26,12 +29,18 @@ application
   └── PrintScript facade
 
 core
-  ├── common
+  ├── source
+  ├── diagnostics
+  ├── tokens
+  ├── lexer
   ├── syntax
   ├── semantics
   ├── interpreter
   ├── formatter
   └── analyzer
+
+test support
+  └── testkit
 ```
 
 ## Main Direction
@@ -42,6 +51,10 @@ core
 - Surface user-code problems as structured diagnostics.
 - Keep side effects behind ports.
 - Route version-specific behavior through factories.
+- Pipeline stages communicate through pull-based port interfaces (`TokenSource`, `StatementSource`)
+  owned by the module that defines the value they stream, not through each other's concrete
+  implementation classes. A stage's build.gradle/module-info dependency should point at the module
+  that owns the contract it consumes, never at the module that happens to produce it today.
 
 ## Design Rules
 
@@ -52,3 +65,7 @@ core
 - Variables require explicit type annotations.
 - Numbers use decimal semantics.
 - Config files use TOML.
+- No single "common" grab-bag module: shared vocabulary is split by cohesion (`source`,
+  `diagnostics`, `tokens`) so a module only depends on the specific concept it actually uses.
+  Orchestration-only types (`CommandResult`, `LanguageVersion`, `ProgressReporter`) live in
+  `application`, the only place that uses them, rather than in a shared foundation module.

@@ -2,9 +2,8 @@ package org.printscript.semantics;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.printscript.common.Diagnostic;
-import org.printscript.common.Phase;
-import org.printscript.syntax.TokenType;
+import org.printscript.diagnostics.Diagnostic;
+import org.printscript.diagnostics.Phase;
 import org.printscript.syntax.TypeName;
 import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
@@ -15,6 +14,7 @@ import org.printscript.syntax.nodes.statements.AssignmentSyntax;
 import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
+import org.printscript.tokens.TokenType;
 
 public final class SemanticContext {
     private final BuiltinRegistry builtins;
@@ -147,7 +147,7 @@ public final class SemanticContext {
         return signature.returnType();
     }
 
-    private Diagnostic error(String message, org.printscript.common.SourceSpan span) {
+    private Diagnostic error(String message, org.printscript.source.SourceSpan span) {
         return Diagnostic.error(Phase.SEMANTIC, message, span);
     }
 

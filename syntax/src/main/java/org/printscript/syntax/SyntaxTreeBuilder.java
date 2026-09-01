@@ -1,29 +1,21 @@
 package org.printscript.syntax;
 
-import java.io.Reader;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.printscript.syntax.nodes.ProgramSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 
 public final class SyntaxTreeBuilder {
-    private final Reader reader;
+    private final StatementSource statements;
 
-    public SyntaxTreeBuilder(String source) {
-        this(new StringReader(source));
-    }
-
-    public SyntaxTreeBuilder(Reader reader) {
-        this.reader = reader;
+    public SyntaxTreeBuilder(StatementSource statements) {
+        this.statements = statements;
     }
 
     public ProgramSyntax buildProgram() {
-        StatementSyntaxReader statementReader = new StatementSyntaxReader(reader);
-        List<StatementSyntax> statements = new ArrayList<>();
-        while (statementReader.hasNext())
-            statements.add(statementReader.next());
-        return new ProgramSyntax(statements, statementReader.eof());
+        List<StatementSyntax> result = new ArrayList<>();
+        while (statements.hasNext())
+            result.add(statements.next());
+        return new ProgramSyntax(result, statements.eof());
     }
 }

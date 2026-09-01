@@ -10,6 +10,8 @@ import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
 import org.printscript.syntax.nodes.statements.AssignmentSyntax;
 import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
+import org.printscript.testkit.TestSources;
+import org.printscript.tokens.TokenType;
 
 class ParserTest {
     @Test
@@ -21,7 +23,7 @@ class ParserTest {
                 println("Result: " + a);
                 """;
 
-        ProgramSyntax program = new SyntaxTreeBuilder(source).buildProgram();
+        ProgramSyntax program = TestSources.programOf(source);
 
         assertEquals(4, program.statements().size());
         assertInstanceOf(VariableDeclarationSyntax.class, program.statements().get(0));

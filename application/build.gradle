@@ -3,11 +3,11 @@ plugins {
 }
 
 dependencies {
-    api project(':common')
     api project(':formatter')
     api project(':analyzer')
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-toml:2.22.1'
     implementation project(':syntax')
     implementation project(':semantics')
     implementation project(':interpreter')
+    implementation project(':lexer')
 }

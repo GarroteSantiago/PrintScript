@@ -5,7 +5,42 @@
 plugins {
     // Apply the java Plugin to add support for Java.
     id 'java'
+    id 'checkstyle'
+    id 'pmd'
+    id 'jacoco'
+    id 'com.diffplug.spotless'
 }
+
+// Apply a specific Java toolchain to ease working on different environments.
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+spotless {
+    java {
+        googleJavaFormat('1.19.2')
+    }
+}
+
+checkstyle {
+    toolVersion = '10.12.5'
+    ignoreFailures = false
+    showViolations = true
+}
+
+pmd {
+    toolVersion = '7.0.0'
+    consoleOutput = true
+    ruleSets = ["category/java/errorprone.xml", "category/java/bestpractices.xml"]
+}
+
+
+jacoco {
+    toolVersion = '0.8.11'
+}
+
 
 repositories {
     // Use Maven Central for resolving dependencies.
@@ -24,14 +59,12 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
-// Apply a specific Java toolchain to ease working on different environments.
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
 tasks.named('test') {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+    finalizedBy 'jacocoTestReport'
+}
+
+tasks.named('jacocoTestReport') {
+    dependsOn 'test'
 }

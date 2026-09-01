@@ -2,10 +2,9 @@ package org.printscript.interpreter;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
-import org.printscript.common.Diagnostic;
-import org.printscript.common.Phase;
+import org.printscript.diagnostics.Diagnostic;
+import org.printscript.diagnostics.Phase;
 import org.printscript.semantics.SemanticModel;
-import org.printscript.syntax.TokenType;
 import org.printscript.syntax.TypeName;
 import org.printscript.syntax.nodes.ProgramSyntax;
 import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
@@ -17,6 +16,7 @@ import org.printscript.syntax.nodes.statements.AssignmentSyntax;
 import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
+import org.printscript.tokens.TokenType;
 
 public final class Interpreter {
     private final OutputPort output;

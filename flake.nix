@@ -30,16 +30,6 @@
 
           # Development utilities
           just
-
-          # Formatting
-          google-java-format
-
-          # Static analysis
-          checkstyle
-          pmd
-
-          # Coverage
-          jacoco
         ];
       in
       {

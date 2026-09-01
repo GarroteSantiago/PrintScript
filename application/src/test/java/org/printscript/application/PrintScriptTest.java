@@ -8,10 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.printscript.analyzer.AnalyzerConfig;
-import org.printscript.common.CommandResult;
-import org.printscript.common.Diagnostic;
-import org.printscript.common.LanguageVersion;
-import org.printscript.common.ProgressReporter;
+import org.printscript.diagnostics.Diagnostic;
 
 class PrintScriptTest {
     @Test

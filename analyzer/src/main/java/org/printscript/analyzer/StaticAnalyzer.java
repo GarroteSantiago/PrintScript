@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
-import org.printscript.common.Diagnostic;
-import org.printscript.common.Phase;
+import org.printscript.diagnostics.Diagnostic;
+import org.printscript.diagnostics.Phase;
 import org.printscript.semantics.SemanticModel;
 import org.printscript.syntax.nodes.ProgramSyntax;
 import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
@@ -63,7 +63,7 @@ public final class StaticAnalyzer {
 
     private void checkName(
             String name,
-            org.printscript.common.SourceSpan span,
+            org.printscript.source.SourceSpan span,
             AnalyzerConfig config,
             Consumer<Diagnostic> diagnostics) {
         boolean valid = switch (config.namingStyle()) {
@@ -75,7 +75,7 @@ public final class StaticAnalyzer {
         }
     }
 
-    private Diagnostic error(String message, org.printscript.common.SourceSpan span) {
+    private Diagnostic error(String message, org.printscript.source.SourceSpan span) {
         return Diagnostic.error(Phase.ANALYZER, message, span);
     }
 }
